@@ -10,11 +10,13 @@ struct users {
     char* pass;
 };
 
-struct socks5args {
+struct socks5_args {
     char* socks_addr;
+    char* socks_addr6;
     unsigned short socks_port;
 
     char* mng_addr;
+    char* mng_addr6;
     unsigned short mng_port;
 
     bool disectors_enabled;
@@ -27,6 +29,6 @@ struct socks5args {
  * args con defaults o la seleccion humana. Puede cortar
  * la ejecución.
  */
-void parse_args(const int argc, char** argv, struct socks5args* args);
+void parse_args(const int argc, char** argv, struct socks5_args* args);
 
 #endif

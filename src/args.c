@@ -54,12 +54,13 @@ static void usage(const char* progname) {
             "   -P <conf port>   Puerto entrante conexiones configuracion\n"
             "   -u <name>:<pass> Usuario y contraseña de usuario que puede usar el proxy. Hasta 10.\n"
             "   -v               Imprime información sobre la versión versión y termina.\n"
+            "   -N               Deshabilita los passwords disectors.\n"
             "\n",
             progname);
     exit(1);
 }
 
-void parse_args(const int argc, char** argv, struct socks5args* args) {
+void parse_args(const int argc, char** argv, struct socks5_args* args) {
     memset(args, 0, sizeof(*args)); // sobre todo para setear en null los punteros de users
 
     args->socks_addr = "0.0.0.0";
