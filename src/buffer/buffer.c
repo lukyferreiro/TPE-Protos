@@ -1,7 +1,7 @@
-/**
- * buffer.c - buffer con acceso directo (útil para I/O) que mantiene
- *            mantiene puntero de lectura y de escritura.
- */
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
+
+/* Buffer con acceso directo (útil para I/O) que mantiene puntero de lectura y de escritura. */
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>

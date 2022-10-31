@@ -2,8 +2,6 @@
 #define PARSER_H_00180a6350a1fbe79f133adf0a96eb6685c242b6
 
 /**
- * parser.c -- pequeño motor para parsers/lexers.
- *
  * El usuario describe estados y transiciones.
  * Las transiciones contienen una condición, un estado destino y acciones.
  *
@@ -29,7 +27,7 @@ struct parser_event {
     struct parser_event* next;
 };
 
-/** describe una transición entre estados  */
+/** Describe una transición entre estados  */
 struct parser_state_transition {
     /* condición: un caracter o una clase de caracter. Por ej: '\r' */
     int when;
@@ -41,10 +39,10 @@ struct parser_state_transition {
     void (*act2)(struct parser_event* ret, const uint8_t c);
 };
 
-/** predicado para utilizar en `when' que retorna siempre true */
+/** Predicado para utilizar en `when' que retorna siempre true */
 static const unsigned ANY = 1 << 9;
 
-/** declaración completa de una máquina de estados */
+/** Declaración completa de una máquina de estados */
 struct parser_definition {
     /** cantidad de estados */
     const unsigned states_count;
@@ -58,20 +56,20 @@ struct parser_definition {
 };
 
 /**
- * inicializa el parser.
+ * Inicializa el parser.
  *
  * `classes`: caracterización de cada caracter (256 elementos)
  */
 struct parser* parser_init(const unsigned* classes, const struct parser_definition* def);
 
-/** destruye el parser */
+/** Destruye el parser */
 void parser_destroy(struct parser* p);
 
-/** permite resetear el parser al estado inicial */
+/** Permite resetear el parser al estado inicial */
 void parser_reset(struct parser* p);
 
 /**
- * el usuario alimenta el parser con un caracter, y el parser retorna un evento
+ * El usuario alimenta el parser con un caracter, y el parser retorna un evento
  * de parsing. Los eventos son reusado entre llamadas por lo que si se desea
  * capturar los datos se debe clonar.
  */

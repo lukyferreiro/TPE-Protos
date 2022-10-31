@@ -1,3 +1,6 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
+
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -10,8 +13,7 @@
 
 #define N(x) (sizeof(x) / sizeof((x)[0]))
 
-extern const char* sockaddr_to_human(char* buff, const size_t buffsize,
-                  const struct sockaddr* addr) {
+extern const char* sockaddr_to_human(char* buff, const size_t buffsize, const struct sockaddr* addr) {
     if (addr == 0) {
         strncpy(buff, "null", buffsize);
         return buff;
@@ -92,6 +94,5 @@ int sock_blocking_copy(const int source, const int dest) {
         } while (nread > 0);
     }
 error:
-
     return ret;
 }

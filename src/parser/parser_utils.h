@@ -2,8 +2,6 @@
 #define PARSER_UTILS_H_c2f29bb6482d34fc6f94a09046bbd65a5f668acf
 
 /*
- * parser_utils.c -- factory de ciertos parsers típicos
- *
  * Provee parsers reusables, como por ejemplo para verificar que
  * un string es igual a otro de forma case insensitive.
  */

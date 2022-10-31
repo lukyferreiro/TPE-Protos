@@ -28,7 +28,7 @@ const char* sockaddr_to_human(char* buff, const size_t buffsize, const struct so
 int sock_blocking_write(const int fd, buffer* b);
 
 /**
- * copia todo el contenido de source a dest de forma bloqueante.
+ * Copia todo el contenido de source a dest de forma bloqueante.
  *
  * Retorna 0 si se realizó sin problema y errno si hubo problemas
  */
