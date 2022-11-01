@@ -5,10 +5,6 @@
 #include <unistd.h> // size_t, ssize_t
 
 /**
- * buffer.c - buffer con acceso directo (útil para I/O) que mantiene
- *            mantiene puntero de lectura y de escritura.
- *
- *
  * Para esto se mantienen dos punteros, uno de lectura
  * y otro de escritura, y se provee funciones para
  * obtener puntero base y capacidad disponibles.
@@ -24,7 +20,7 @@
  * Invariantes:
  *    R <= W <= limit
  *
- * Se quiere escribir en el bufer cuatro bytes.
+ * Se quiere escribir en el buffer cuatro bytes.
  *
  * ptr + 0 <- buffer_write_ptr(b, &wbytes), wbytes=6
  * n = read(fd, ptr, wbytes)
@@ -81,18 +77,13 @@
  * ↑                       ↑
  * W=0                     limit=6
  */
+
 typedef struct buffer buffer;
 struct buffer {
     uint8_t* data;
-
-    /** Límite superior del buffer. inmutable */
-    uint8_t* limit;
-
-    /** Puntero de lectura */
-    uint8_t* read;
-
-    /** Puntero de escritura */
-    uint8_t* write;
+    uint8_t* limit;     // Límite superior del buffer (inmutable) 
+    uint8_t* read;      // Puntero de lectura
+    uint8_t* write;     // Puntero de escritura
 };
 
 /** Inicializa el buffer sin utilizar el heap */

@@ -4,7 +4,6 @@
 #include <check.h>
 #include <stdlib.h>
 
-// asi se puede probar las funciones internas
 #include "buffer.c"
 
 #define N(x) (sizeof(x) / sizeof((x)[0]))
@@ -22,7 +21,8 @@ START_TEST(test_buffer_misc) {
     size_t wbytes = 0, rbytes = 0;
     uint8_t* ptr = buffer_write_ptr(b, &wbytes);
     ck_assert_uint_eq(6, wbytes);
-    // escribo 4 bytes
+
+    // Escribo 4 bytes
     uint8_t first_write[] = {
         'H',
         'O',

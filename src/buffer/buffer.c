@@ -25,7 +25,7 @@ inline bool buffer_can_write(buffer* b) {
 
 inline uint8_t* buffer_write_ptr(buffer* b, size_t* nbyte) {
     assert(b->write <= b->limit);
-    *nbyte = b->limit - b->write;
+    *nbyte = b->limit - b->write;   //Espacio que le queda para escribir
     return b->write;
 }
 
@@ -35,7 +35,7 @@ inline bool buffer_can_read(buffer* b) {
 
 inline uint8_t* buffer_read_ptr(buffer* b, size_t* nbyte) {
     assert(b->read <= b->write);
-    *nbyte = b->write - b->read;
+    *nbyte = b->write - b->read;    //Bytes que le faltan por leer
     return b->read;
 }
 
@@ -50,9 +50,8 @@ inline void buffer_read_adv(buffer* b, const ssize_t bytes) {
     if (bytes > -1) {
         b->read += (size_t)bytes;
         assert(b->read <= b->write);
-
         if (b->read == b->write) {
-            // compactacion poco costosa
+            // Compactacion poco costosa
             buffer_compact(b);
         }
     }

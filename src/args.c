@@ -14,9 +14,7 @@ static unsigned short port(const char* s) {
     char* end = 0;
     const long sl = strtol(s, &end, 10);
 
-    if (end == s || '\0' != *end || 
-         ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno) ||
-         sl < 0 || sl > USHRT_MAX) {
+    if (end == s || '\0' != *end || ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno) || sl < 0 || sl > USHRT_MAX) {
         fprintf(stderr, "Port should be in the range of 1-65536: %s\n", s);
         exit(1);
         return 1;
@@ -40,7 +38,7 @@ static void user(char* s, struct users* user) {
 static void version(void) {
     fprintf(stderr, "SOCKSv5 version 0.0\n"
                     "ITBA Protocolos de Comunicación 2022/1 -- Grupo 1\n"
-                    "AQUI VA LA LICENCIA\n"); //TODO
+                    "AQUI VA LA LICENCIA\n"); // TODO
 }
 
 static void usage(const char* progname) {
