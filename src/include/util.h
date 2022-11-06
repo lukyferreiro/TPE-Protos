@@ -2,6 +2,7 @@
 #define UTIL_H_
 
 #include <netdb.h>
+#include <stdio.h>
 #include <sys/socket.h>
 
 int printSocketAddress(const struct sockaddr* address, char* addrBuffer);

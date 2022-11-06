@@ -36,9 +36,9 @@ static void user(char* s, struct users* user) {
 }
 
 static void version(void) {
-    fprintf(stderr, "SOCKSv5 version 0.0\n"
-                    "ITBA Protocolos de Comunicación 2022/1 -- Grupo 1\n"
-                    "AQUI VA LA LICENCIA\n"); // TODO
+    fprintf(stderr, "SOCKSv5 version: " DEFAULT_VERSION "\n"
+                    "ITBA Protocolos de Comunicación 2022/2 -- Grupo 1\n"
+                    "ALFA PROTOCOL :) \n"); // TODO
 }
 
 static void usage(const char* progname) {
@@ -59,36 +59,24 @@ static void usage(const char* progname) {
 }
 
 void parse_args(const int argc, char** argv, struct socks5_args* args) {
-    memset(args, 0, sizeof(*args)); // sobre todo para setear en null los punteros de users
+    memset(args, 0, sizeof(*args)); // Para setear en null los punteros de users
 
-    args->socks_addr = "0.0.0.0";
-    args->socks_port = 1080;
+    args->socks_addr = DEFAULT_IPV4_ADDR_PROXY;
+    args->socks_addr6 = DEFAULT_IPV6_ADDR_PROXY;
+    args->socks_port = DEFAULT_PORT_SOCKS5;
 
-    args->mng_addr = "127.0.0.1";
-    args->mng_port = 8080;
+    args->mng_addr = DEFAULT_IPV4_ADDR_MNG;
+    args->mng_addr = DEFAULT_IPV6_ADDR_MNG;
+    args->mng_port = DEFAULT_PORT_MNG;
+
+    args->version = DEFAULT_VERSION;
+    args->nusers = 0;
 
     args->disectors_enabled = true;
 
-    args->doh.host = "localhost";
-    args->doh.ip = "127.0.0.1";
-    args->doh.port = 8053;
-    args->doh.path = "/getnsrecord";
-    args->doh.query = "?dns=";
-
     int c;
-    int nusers = 0;
-
     while (true) {
-        int option_index = 0;
-        static struct option long_options[] = {
-            {"doh-ip", required_argument, 0, 0xD001},
-            {"doh-port", required_argument, 0, 0xD002},
-            {"doh-host", required_argument, 0, 0xD003},
-            {"doh-path", required_argument, 0, 0xD004},
-            {"doh-query", required_argument, 0, 0xD005},
-            {0, 0, 0, 0}};
-
-        c = getopt_long(argc, argv, "hl:L:Np:P:u:v", long_options, &option_index);
+        c = getopt(argc, argv, "hl:L:Np:P:u:v");
         if (c == -1)
             break;
 
@@ -97,10 +85,18 @@ void parse_args(const int argc, char** argv, struct socks5_args* args) {
                 usage(argv[0]);
                 break;
             case 'l':
-                args->socks_addr = optarg;
+                //Si encontramos ':', voy a usar IPv6
+                if (strchr(optarg, ':') != NULL) 
+                    args->socks_addr6 = optarg;
+                else
+                    args->socks_addr = optarg;
                 break;
             case 'L':
-                args->mng_addr = optarg;
+                //Si encontramos ':', voy a usar IPv6
+                if (strchr(optarg, ':') != NULL)
+                    args->mng_addr6 = optarg;
+                else
+                    args->mng_addr = optarg;
                 break;
             case 'N':
                 args->disectors_enabled = false;
@@ -112,32 +108,17 @@ void parse_args(const int argc, char** argv, struct socks5_args* args) {
                 args->mng_port = port(optarg);
                 break;
             case 'u':
-                if (nusers >= MAX_USERS) {
+                if (args->nusers >= MAX_USERS) {
                     fprintf(stderr, "Maximun number of command line users reached: %d.\n", MAX_USERS);
                     exit(1);
                 } else {
-                    user(optarg, args->users + nusers);
-                    nusers++;
+                    user(optarg, args->users + args->nusers);
+                    args->nusers++;
                 }
                 break;
             case 'v':
                 version();
                 exit(0);
-                break;
-            case 0xD001:
-                args->doh.ip = optarg;
-                break;
-            case 0xD002:
-                args->doh.port = port(optarg);
-                break;
-            case 0xD003:
-                args->doh.host = optarg;
-                break;
-            case 0xD004:
-                args->doh.path = optarg;
-                break;
-            case 0xD005:
-                args->doh.query = optarg;
                 break;
             default:
                 fprintf(stderr, "Unknown argument %d.\n", c);

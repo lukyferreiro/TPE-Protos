@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <unistd.h> // size_t, ssize_t
 
+#define BUFFER_SIZE 4096
+
 /**
  * Para esto se mantienen dos punteros, uno de lectura
  * y otro de escritura, y se provee funciones para

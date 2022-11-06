@@ -27,8 +27,6 @@
 #include <unistd.h>
 
 #include "selector.h"
-#include "socks5.h"
-#include "socks5nio.h"
 
 static bool done = false;
 
