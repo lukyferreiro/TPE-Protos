@@ -59,9 +59,20 @@ static unsigned hello_write(struct selector_key* key);
 static void hello_read_close(const unsigned state, struct selector_key* key);
 
 // Declaraciones de request
+static unsigned request_resolv_done(struct selector_key *key);
 static void request_init(const unsigned state, struct selector_key* key);
-static unsigned request_process(struct selector_key* key, const struct hello_st* d);
+static unsigned request_process(struct selector_key* key, const struct request_st* d);
 static unsigned request_read(struct selector_key* key);
+static void request_connecting_init(const unsigned state, struct selector_key *key);
+static unsigned request_connecting(struct selector_key *key);
+static unsigned request_write(struct selector_key *key);
+static void request_read_close(const unsigned state, struct selector_key* key);
+
+// Declaraciones de copy
+static void copy_init(const unsigned state, struct selector_key *key);
+static unsigned copy_read(struct selector_key *key);
+static unsigned copy_write(struct selector_key *key);
+//Declaraciones de userpass
 //-----------------------------------------------------------------------------
 
 static const struct fd_handler socks5_handler = {
@@ -203,7 +214,7 @@ static const struct state_definition client_statbl[] = {
     },
     {
         .state = REQUEST_CONNECTING,
-        .on_arrival = request_connection_init,
+        .on_arrival = request_connecting_init,
         .on_write_ready = request_connecting,
     },
     {
@@ -227,7 +238,7 @@ static const struct state_definition client_statbl[] = {
 struct hello_st {
     buffer* rb;                 // Buffer de escritura utilizado para I/O
     buffer* wb;                 // Buffer de lectura utilizado para I/O
-    struct hello_parser parser; // TODO hacer el parser del hello
+    struct hello_parser parser; 
     uint8_t method;             // El metodo de autenticacion seleccionado
 };
 
@@ -236,8 +247,8 @@ struct request_st {
     buffer* rb; // Buffer de escritura utilizado para I/O
     buffer* wb; // Buffer de lectura utilizado para I/O
 
-    struct request request;       // TODO hacer la struct request
-    struct request_parser parser; // TODO hacer el parser del request
+    struct request request;       
+    struct request_parser parser; 
 
     enum socks5_response_status status; // El resumen de la respuesta a enviar
 
@@ -485,7 +496,7 @@ fail:
 /** Callback del parser utilizado en 'read_hello' */
 static void on_hello_method(struct hello_parser* p, const uint8_t method) {
     uint8_t* selected = p->data;
-    if (SOCKS_HELLO_NOAUTHENTICATION_REQUIRED == method) {
+    if (METHOD_NO_AUTHENTICATION_REQUIRED == method) {
         *selected = method;
     }
 }
@@ -496,7 +507,10 @@ static void hello_read_init(const unsigned state, struct selector_key* key) {
     d->rb = &(ATTACHMENT(key)->read_buffer);
     d->wb = &(ATTACHMENT(key)->write_buffer);
     d->parser.data = &d->method;
-    d->parser.on_authentication_method = on_hello_method, hello_parser_init(&d->parser);
+    /* d->parser.on_authentication_method = on_hello_method;
+    hello_parser_init(&d->parser); */
+    *((uint8_t *)d->parser.data) = METHOD_NO_ACCEPTABLE_METHODS;
+    hello_parser_init(&d->parser, on_hello_method);
 }
 
 /** Lee todos los bytes del mensaje de tipo `hello' y inicia su proceso */
@@ -514,8 +528,9 @@ static unsigned hello_read(struct selector_key* key) {
 
     if (n > 0) {
         buffer_write_adv(d->rb, n);
-        const enum hello_state st = hello_consume(d->rb, &d->parser, &error);
-        if (hello_is_done(st, 0)) {
+        /* const enum hello_state st = hello_parser_consume(d->rb, &d->parser, &error);
+        if (hello_parser_is_done(st, 0)) { */
+        if (hello_parser_consume(d->rb, &d->parser, &error)) {
             if (SELECTOR_SUCCESS == selector_set_interest_key(key, OP_WRITE)) {
                 ret = hello_process(d);
             } else {
@@ -533,12 +548,11 @@ static unsigned hello_read(struct selector_key* key) {
 static unsigned hello_process(const struct hello_st* d) {
     unsigned ret = HELLO_WRITE;
     uint8_t m = d->method;
-    const uint8_t r = (m == SOCKS_HELLO_NO_ACCEPTABLE_METHODS) ? 0xFF : 0x00;
 
-    if (-1 == hello_marshall(d->wb, r)) {
+    if (-1 == hello_marshall(d->wb, m)) {
         ret = ERROR;
     }
-    if (SOCKS_HELLO_NO_ACCEPTABLE_METHODS == m) {
+    if (METHOD_NO_ACCEPTABLE_METHODS == m) {
         ret = ERROR;
     }
 
@@ -599,7 +613,7 @@ static void request_init(const unsigned state, struct selector_key* key) {
 }
 
 /** Procesamiento del mensaje `request' */
-static unsigned request_process(struct selector_key* key, const struct hello_st* d) {
+static unsigned request_process(struct selector_key* key, const struct request_st* d) {
     //...
 }
 
@@ -622,4 +636,52 @@ static unsigned request_read(struct selector_key* key) {
         ret = ERROR;
     }
     return error ? ERROR : ret;
+}
+
+static unsigned request_resolv_done(struct selector_key *key) {
+    //...
+}
+
+static void request_connecting_init(const unsigned state, struct selector_key *key) {
+    //...
+}
+
+static unsigned request_connecting(struct selector_key *key) {
+    //...
+}
+
+static unsigned request_write(struct selector_key *key) {
+    //...
+}
+
+static void request_read_close(const unsigned state, struct selector_key* key) {
+    //...
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//------------------------------------COPY--------------------------------------
+////////////////////////////////////////////////////////////////////////////////
+
+static void copy_init(const unsigned state, struct selector_key *key) {
+    struct copy *d = &ATTACHMENT(key)->client.copy;
+    d->fd = &ATTACHMENT(key)->client_fd;
+    d->rb = &ATTACHMENT(key)->read_buffer;
+    d->wb = &ATTACHMENT(key)->write_buffer;
+    d->duplex = OP_READ | OP_WRITE;
+    d->other = &ATTACHMENT(key)->orig.copy;
+    d = &ATTACHMENT(key)->orig.copy;
+    d->fd = &ATTACHMENT(key)->origin_fd;
+    d->rb = &ATTACHMENT(key)->write_buffer;
+    d->wb = &ATTACHMENT(key)->read_buffer;
+    d->duplex = OP_READ | OP_WRITE;
+    d->other = &ATTACHMENT(key)->client.copy;
+}
+
+static unsigned copy_read(struct selector_key *key) {
+    //...
+}
+
+static unsigned copy_write(struct selector_key *key) {
+    //...
 }

@@ -9,12 +9,6 @@
 static const uint8_t METHOD_NO_AUTHENTICATION_REQUIRED = 0x00;
 static const uint8_t METHOD_AUTHENTICATION = 0x02;
 static const uint8_t METHOD_NO_ACCEPTABLE_METHODS = 0xFF;
-static const uint8_t SOCKS_HELLO_NOAUTHENTICATION_REQUIRED = 0x00;
-/*
- * If the selected METHOD is X'FF', none of the methods listed by the
-   client are acceptable, and the client MUST close the connection.
- */
-static const uint8_t SOCKS_HELLO_NO_ACCEPTABLE_METHODS = 0xFF;
 
 /*
  *   The client connects to the server, and sends a version
@@ -51,7 +45,7 @@ typedef struct hello_parser {
 } hello_parser;
 
 /** Inicializa el parser */
-void hello_parser_init(struct hello_parser* p);
+void hello_parser_init(struct hello_parser* p, void (*on_authentication_method)(hello_parser *p, uint8_t method));
 
 /** Entrega un byte al parser. retorna true si se llego al final  */
 enum hello_state hello_parser_feed(struct hello_parser* p, uint8_t b);

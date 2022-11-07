@@ -9,15 +9,16 @@
 
 #include "hello.h"
 
-extern void hello_parser_init(struct hello_parser* p) {
+extern void hello_parser_init(struct hello_parser* p, void (*on_auth_method)(hello_parser* p, uint8_t method)) {
     p->state = HELLO_VERSION;
+    p->on_authentication_method = on_auth_method;
     p->remaining = 0;
 }
 
 extern enum hello_state hello_parser_feed(struct hello_parser* p, const uint8_t b) {
     switch (p->state) {
         case HELLO_VERSION:
-            if (0x05 == b) {    //Version 5 de socks
+            if (0x05 == b) { // Version 5 de socks
                 p->state = HELLO_NMETHODS;
             } else {
                 p->state = HELLO_ERROR_UNSUPPORTED_VERSION;
@@ -51,8 +52,7 @@ extern enum hello_state hello_parser_feed(struct hello_parser* p, const uint8_t 
 }
 
 extern enum hello_state hello_parser_consume(buffer* b, struct hello_parser* p, bool* errored) {
-    enum hello_state st = p->state;
-
+    /* enum hello_state st = p->state;
     while (buffer_can_read(b)) {
         const uint8_t c = buffer_read(b);
         st = hello_parser_feed(p, c);
@@ -60,17 +60,24 @@ extern enum hello_state hello_parser_consume(buffer* b, struct hello_parser* p, 
             break;
         }
     }
-    return st;
+    return st; */
+
+    uint8_t byte;
+    while (!hello_parser_is_done(p->state, errored) && buffer_can_read(b)) {
+        byte = buffer_read(b);
+        p->state = hello_parser_feed(p, byte);
+    }
+    return hello_parser_is_done(p->state, errored);
 }
 
 extern bool hello_parser_is_done(const enum hello_state state, bool* errored) {
-    bool ret;
+    /* bool ret;
     switch (state) {
         case HELLO_ERROR_UNSUPPORTED_VERSION:
             if (0 != errored) {
                 *errored = true;
             }
-            /* no break */
+            // no break
         case HELLO_DONE:
             ret = true;
             break;
@@ -78,17 +85,32 @@ extern bool hello_parser_is_done(const enum hello_state state, bool* errored) {
             ret = false;
             break;
     }
-    return ret;
+    return ret; */
+
+    if (errored != NULL) {
+        if (state == HELLO_ERROR_UNSUPPORTED_VERSION) {
+            *errored = true;
+        } else {
+            *errored = false;
+        }
+    }
+    if (state == HELLO_ERROR_UNSUPPORTED_VERSION || state == HELLO_DONE)
+        return true;
+    return false;
 }
 
 extern const char* hello_parser_error(const struct hello_parser* p) {
     char* ret;
     switch (p->state) {
-        case HELLO_ERROR_UNSUPPORTED_VERSION:
-            ret = "unsupported version";
+        case HELLO_DONE:
+        case HELLO_VERSION:
+        case HELLO_NMETHODS:
+        case HELLO_METHODS:
+            ret = "No error";
             break;
+        case HELLO_ERROR_UNSUPPORTED_VERSION:
         default:
-            ret = "";
+            ret = "Unsupported version";
             break;
     }
     return ret;
@@ -104,7 +126,7 @@ extern int hello_parser_marshall(buffer* b, const uint8_t method) {
     if (n < 2) {
         return -1;
     }
-    buff[0] = 0x05;     //Version de socks 5
+    buff[0] = 0x05; // Version de socks 5
     buff[1] = method;
     buffer_write_adv(b, 2);
     return 2;
