@@ -70,3 +70,4 @@ report.tasks
 strace_out
 valgrind_log.txt
 check
+*.cppcheck
