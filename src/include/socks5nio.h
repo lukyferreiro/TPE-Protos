@@ -4,8 +4,15 @@
 #include "selector.h"
 #include <netdb.h>
 
-/** Intenta aceptar la nueva conexión entrante*/
+/** 
+ * Handler del socket pasivo que atiende conexiones socksv5
+ * Intenta aceptar la nueva conexión entrante
+*/
 void socksv5_passive_accept(struct selector_key* key);
+
+/** 
+ * Libera pools internos
+*/
 void socksv5_pool_destroy(void);
 
 #endif
