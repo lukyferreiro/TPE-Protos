@@ -49,6 +49,7 @@ static void on_hello_method(struct hello_parser* p, const uint8_t method);
 static void hello_read_init(const unsigned state, struct selector_key* key);
 static unsigned hello_process(const struct hello_st* d);
 static unsigned hello_read(struct selector_key* key);
+static unsigned hello_write(struct selector_key* key);
 //-----------------------------------------------------------------------------
 
 static const struct fd_handler socks5_handler = {
@@ -61,7 +62,7 @@ static const struct fd_handler socks5_handler = {
 /** Maquina de estados general */
 enum socks_v5state {
     /**
-     * Recibe el mensaje `hello` del cliente, y lo procesa
+     * Recibe el mensaje 'hello' del cliente, y lo procesa
      *
      * Intereses:
      *     - OP_READ sobre client_fd
@@ -74,7 +75,7 @@ enum socks_v5state {
     HELLO_READ,
 
     /**
-     * Envía la respuesta del `hello' al cliente.
+     * Envía la respuesta del 'hello' al cliente.
      *
      * Intereses:
      *     - OP_WRITE sobre client_fd
@@ -85,6 +86,16 @@ enum socks_v5state {
      *   - ERROR        ante cualquier error (IO/parseo)
      */
     HELLO_WRITE,
+
+    /**
+     * Debe recibir el mensaje 'request' del cliente e comenzar lo solicitado
+     */
+    REQUEST_READ,
+
+    /**
+     * Envía la respuesta del 'request' al cliente
+     */
+    REQUEST_WRITE,
 
     // Estados terminales
     DONE,
@@ -99,16 +110,35 @@ static const struct state_definition client_statbl[] = {
         .on_departure = hello_read_close,
         .on_read_ready = hello_read,
     },
+    {
+        .state = HELLO_WRITE,
+        .on_write_ready = hello_write,
+        // ... ?? 
+    },
+    {
+        .state = REQUEST_READ,
+        // ... ?? 
+    },
+    {
+        .state = REQUEST_WRITE,
+        // ... ?? 
+    },
+    {.state = DONE},
+    {.state = ERROR}
+};
 
-    /** Usado por HELLO_READ, HELLO_WRITE */
-    struct hello_st{
-        buffer * rb, *wb; // Buffer utilizado para I/O
-struct hello_parser parser;
-uint8_t method; // El metodo de autenticacion seleccionado
-}
-;
+/** Usado por HELLO_READ, HELLO_WRITE */
+struct hello_st {
+    buffer* rb;     // Buffer de escritura utilizado para I/O
+    buffer* wb;     // Buffer de lectura utilizado para I/O
+    struct hello_parser parser;     //TODO hacer el parser del hello
+    uint8_t method; // El metodo de autenticacion seleccionado
+};
 
 struct request_st {
+    buffer* rb;     // Buffer de escritura utilizado para I/O
+    buffer* wb;     // Buffer de lectura utilizado para I/O
+    struct request_parser parser;   //TODO hacer el parser del request
     //...
 };
 
@@ -322,15 +352,38 @@ static unsigned hello_read(struct selector_key* key) {
 /** Procesamiento del mensaje `hello' */
 static unsigned hello_process(const struct hello_st* d) {
     unsigned ret = HELLO_WRITE;
-
     uint8_t m = d->method;
     const uint8_t r = (m == SOCKS_HELLO_NO_ACCEPTABLE_METHODS) ? 0xFF : 0x00;
+
     if (-1 == hello_marshall(d->wb, r)) {
         ret = ERROR;
     }
     if (SOCKS_HELLO_NO_ACCEPTABLE_METHODS == m) {
         ret = ERROR;
     }
+
     return ret;
 }
-.
+
+static unsigned hello_write(struct selector_key* key) {
+    struct hello_st* d = &ATTACHMENT(key)->client.hello;
+    unsigned ret = HELLO_WRITE;
+    size_t count;
+    uint8_t* ptr = buffer_read_ptr(d->wb, &count);;
+    ssize_t n = send(key->fd, ptr, count, MSG_NOSIGNAL);;
+
+    if (n == -1) {
+        ret = ERROR;
+    } else {
+        buffer_read_adv(d->wb, n);
+        if (!buffer_can_read(d->wb)) {
+            if (SELECTOR_SUCCESS == selector_set_interest_key(key, OP_READ)) {
+                // Nada por ahora
+            } else {
+                ret = ERROR;
+            }
+        }
+    }
+
+    return ret;
+}
