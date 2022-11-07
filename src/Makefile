@@ -9,9 +9,10 @@ all: main
 
 main: 
 	$(GCC) $(LDFLAGS) $(GCCFLAGS) -o main main.c $(UTILS)
+	$(GCC) $(LDFLAGS) $(GCCFLAGS) -o tcpServer tcpServer.c $(UTILS)
 
 clean:
-	rm -rf main
+	rm -rf main tcpServer
 	rm -rf ./check
 
 check:

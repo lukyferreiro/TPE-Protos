@@ -5,6 +5,7 @@
 
 #include "stm.h"
 #include <stdlib.h>
+#include "logger.h"
 
 #define N(x) (sizeof(x) / sizeof((x)[0]))
 

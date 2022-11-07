@@ -10,6 +10,7 @@
 
 #include "request.h"
 #include <stdlib.h>
+#include "logger.h"
 
 static void remaining_set(struct request_parser* p, const int n) {
     p->readBytes = 0;
@@ -166,8 +167,7 @@ extern enum request_state request_parser_feed(struct request_parser* p, const ui
 }
 
 extern enum request_state request_parser_consume(buffer* b, struct request_parser* p, bool* errored) {
-    enum request_state st = p->state;
-
+    /* enum request_state st = p->state;
     while (buffer_can_read(b)) {
         const uint8_t c = buffer_read(b);
         st = request_parser_feed(p, c);
@@ -175,14 +175,50 @@ extern enum request_state request_parser_consume(buffer* b, struct request_parse
             break;
         }
     }
-    return st;
+    return st; */
+
+    uint8_t byte;
+    while (!request_parser_is_done(p->state, errored) && buffer_can_read(b)) {
+        byte = buffer_read(b);
+        p->state = request_parser_feed(p, byte);
+    }
+    return request_parser_is_done(p->state, errored);
 }
 
 extern bool request_parser_is_done(const enum request_state st, bool* errored) {
-    if (st >= REQUEST_ERROR && errored != 0) {
+    /* if (st >= REQUEST_ERROR && errored != 0) {
         *errored = true;
     }
-    return st >= REQUEST_DONE;
+    return st >= REQUEST_DONE; */
+    
+    if (errored != NULL){
+        *errored = false;
+    }
+    switch (st) {
+
+    case REQUEST_DONE:
+        return true;
+        break;
+
+    case REQUEST_VERSION:
+    case REQUEST_CMD:
+    case REQUEST_RSV:
+    case REQUEST_ATYP:
+    case REQUEST_DSTADDR_FQDN:
+    case REQUEST_DSTADDR:
+    case REQUEST_DSTPORT:
+        return false;
+        break;
+    case REQUEST_ERROR_UNSUPPORTED_VERSION:
+    case REQUEST_ERROR_UNSUPPORTED_ATYP:
+    case REQUEST_ERROR:
+    default:
+        if (errored != NULL){
+            *errored = true;
+        }
+        return true;
+        break;
+    }
 }
 
 extern void request_parser_close(struct request_parser* p) {

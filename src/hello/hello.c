@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #include "hello.h"
+#include "logger.h"
 
 extern void hello_parser_init(struct hello_parser* p, void (*on_authentication_method)(hello_parser* p, uint8_t method)) {
     p->state = HELLO_VERSION;

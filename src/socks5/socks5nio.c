@@ -68,7 +68,7 @@ enum socks_v5state {
      *
      * Transiciones:
      *   - REQUEST_READ         mientras el mensaje no este completo
-     *   - REQUEST_RESOLV       si requiete resolver un nombre DNS
+     *   - REQUEST_RESOLV       si requiere resolver un nombre DNS
      *   - REQUEST_CONNECTING   si no require resolver un DNS, y podemos iniciar la conexcion al origin server
      *   - REQUEST_WRITE        si determinamos que el mensaje no lo podemos procesar
      *   - ERROR                ante cualquier error (IO/parseo)
@@ -264,7 +264,7 @@ static void hello_read_close(const unsigned state, struct selector_key* key);
 // Declaraciones de request
 static unsigned request_resolv_done(struct selector_key *key);
 static void request_init(const unsigned state, struct selector_key* key);
-static unsigned request_process(struct selector_key* key, const struct request_st* d);
+static unsigned request_process(struct selector_key *key, const struct request_st *d);
 static unsigned request_read(struct selector_key* key);
 static void request_connecting_init(const unsigned state, struct selector_key *key);
 static unsigned request_connecting(struct selector_key *key);
@@ -460,31 +460,35 @@ void socksv5_passive_accept(struct selector_key* key) {
     struct sockaddr_storage client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
     struct socks5* state = NULL;
+    selector_status status = SELECTOR_SUCCESS;
+
     const int client = accept(key->fd, (struct sockaddr*)&client_addr, &client_addr_len);
 
-    
-
     if (client == -1) {
+        log(LOG_ERROR, "Fail to accept client connection");
         goto fail;
     }
     if (selector_fd_set_nio(client) == -1) {
+        log(LOG_ERROR, "Fail to set non block");
         goto fail;
     }
 
     state = socks5_new(client);
     if (state == NULL) {
-        // sin un estado, nos es imposible manejaro.
-        // tal vez deberiamos apagar accept() hasta que detectemos
-        // que se liberó alguna conexión.
+        log(LOG_ERROR, "Fail to create new socks5 connection");
         goto fail;
     }
 
     memcpy(&state->client_addr, &client_addr, client_addr_len);
     state->client_addr_len = client_addr_len;
 
-    if (SELECTOR_SUCCESS != selector_register(key->s, client, &socks5_handler, OP_READ, state)) {
+    status = selector_register(key->s, client, &socks5_handler, OP_READ, state);
+    if (status != SELECTOR_SUCCESS) {
+        log(LOG_ERROR, "Error while registering in selector");
         goto fail;
     }
+
+    log(DEBUG, "New connection created");
     return;
 
 fail:
@@ -572,7 +576,7 @@ static unsigned hello_write(struct selector_key* key) {
     uint8_t* ptr;
     ssize_t n;
 
-    //Leo bytes del sockey y los mando
+    //Leo bytes del socket y los mando
     ptr = buffer_read_ptr(d->wb, &count);
     n = send(key->fd, ptr, count, MSG_NOSIGNAL);
 
@@ -589,6 +593,8 @@ static unsigned hello_write(struct selector_key* key) {
         }
     }
 
+    log(DEBUG, "ACA FALLA1");
+
     return ret;
 }
 
@@ -596,6 +602,7 @@ static unsigned hello_write(struct selector_key* key) {
 static void hello_read_close(const unsigned state, struct selector_key* key) {
     struct hello_st* d = &ATTACHMENT(key)->client.hello;
     hello_parser_close(&d->parser);
+    log(DEBUG, "ACA FALLA0");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -615,12 +622,13 @@ static void request_init(const unsigned state, struct selector_key* key) {
     d->origin_addr = &ATTACHMENT(key)->origin_addr;
     d->origin_addr_len = &ATTACHMENT(key)->origin_addr_len;
     d->origin_domain = &ATTACHMENT(key)->origin_domain;
+    log(DEBUG, "ACA FALLA2");
 }
 
-/** Procesamiento del mensaje `request' */
+/** Procesamiento del mensaje `request', aca decidimos si cambiamos al estado REQUEST_CONECTING o REQUEST_RESOLVE */
 static unsigned request_process(struct selector_key* key, const struct request_st* d) {
     //...
-}
+} 
 
 /** Lee todos los bytes del mensaje 'request' y inicia su proceso */
 static unsigned request_read(struct selector_key* key) {
@@ -628,24 +636,29 @@ static unsigned request_read(struct selector_key* key) {
     buffer* b = d->rb;
     unsigned ret = REQUEST_READ;
     bool error = false;
+    uint8_t* ptr;
     size_t count;
-    uint8_t* ptr = buffer_write_ptr(b, &count);
-    ssize_t n = recv(key->fd, ptr, count, 0);
+    ssize_t n;
+
+    ptr = buffer_write_ptr(b, &count);
+    n = recv(key->fd, ptr, count, 0);
     if (n > 0) {
         buffer_write_adv(b, n);
-        int st = request_parser_consume(b, &d->parser, &error);
-        if (request_parser_is_done(st, 0)) {
+        /* int st = request_parser_consume(b, &d->parser, &error);
+        if (request_parser_is_done(st, 0)) { */
+        if (request_parser_consume(b, &d->parser, &error)) {
             ret = request_process(key, d);
         }
     } else {
         ret = ERROR;
     }
+    log(DEBUG, "ACA FALLA3");
     return error ? ERROR : ret;
 }
 
 static unsigned request_resolv_done(struct selector_key *key) {
     //...
-}
+} 
 
 static void request_connecting_init(const unsigned state, struct selector_key *key) {
     //...
@@ -653,14 +666,14 @@ static void request_connecting_init(const unsigned state, struct selector_key *k
 
 static unsigned request_connecting(struct selector_key *key) {
     //...
-}
+} 
 
 static unsigned request_write(struct selector_key *key) {
-    //...
 }
 
 static void request_read_close(const unsigned state, struct selector_key* key) {
-    //...
+    struct request_st* d = &ATTACHMENT(key)->client.request;
+    request_parser_close(&d->parser);
 }
 
 
@@ -675,6 +688,7 @@ static void copy_init(const unsigned state, struct selector_key *key) {
     d->wb = &ATTACHMENT(key)->write_buffer;
     d->duplex = OP_READ | OP_WRITE;
     d->other = &ATTACHMENT(key)->orig.copy;
+
     d = &ATTACHMENT(key)->orig.copy;
     d->fd = &ATTACHMENT(key)->origin_fd;
     d->rb = &ATTACHMENT(key)->write_buffer;
@@ -690,3 +704,7 @@ static unsigned copy_read(struct selector_key *key) {
 static unsigned copy_write(struct selector_key *key) {
     //...
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//----------------------------------USERPASS------------------------------------
+////////////////////////////////////////////////////////////////////////////////
