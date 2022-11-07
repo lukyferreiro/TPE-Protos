@@ -3,15 +3,16 @@ GCC = gcc
 #-pedantic -pedantic-errors -O3 -std=c11 -fsanitize=address -lrt -Werror -Wno-pointer-arith
 GCCFLAGS = -g -Wall -Wextra -D_POSIX_C_SOURCE=200112L -Wno-unused-parameter -Wno-implicit-fallthrough $(INCLUDE) 
 LDFLAGS = -pthread
-UTILS=./logger/logger.c ./netutils/util.c ./netutils/tcpServerUtil.c ./netutils/tcpClientUtil.c
+UTILS=./logger/logger.c ./netutils/util.c ./netutils/tcpServerUtil.c ./netutils/tcpClientUtil.c ./buffer/buffer.c ./hello/hello.c ./parser/parser_utils.c ./parser/parser.c ./selector/selector.c ./socks5/socks5nio.c ./stm/stm.c ./args.c ./request/request.c
 
 all: main
 
 main: 
-	$(GCC) $(LDFLAGS) $(GCCFLAGS) -o tcpServer tcpServer.c $(UTILS)
+	$(GCC) $(LDFLAGS) $(GCCFLAGS) -o main main.c $(UTILS)
 
 clean:
-	rm -rf tcpServer
+	rm -rf main
+	rm -rf ./check
 
 check:
 	mkdir -p check

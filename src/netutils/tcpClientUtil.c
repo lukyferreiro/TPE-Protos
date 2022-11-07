@@ -21,7 +21,7 @@ int tcpClientSocket(const char *host, const char *service) {
 	struct addrinfo *servAddr; // Holder for returned list of server addrs
 	int rtnVal = getaddrinfo(host, service, &addrCriteria, &servAddr);
 	if (rtnVal != 0) {
-		log(ERROR, "getaddrinfo() failed %s", gai_strerror(rtnVal))
+		log(LOG_ERROR, "getaddrinfo() failed %s", gai_strerror(rtnVal))
 		return -1;
 	}
 

@@ -71,12 +71,12 @@ int main(int argc , char *argv[]){
 	///////////////////////////////////////////////////////////// IPv4
 	if( (master_socket[master_socket_size] = socket(AF_INET , SOCK_STREAM , 0)) == 0) 
 	{
-		log(ERROR, "socket IPv4 failed");
+		log(LOG_ERROR, "socket IPv4 failed");
 	} else {
 		//set master socket to allow multiple connections , this is just a good habit, it will work without this
 		if( setsockopt(master_socket[master_socket_size], SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 )
 		{
-			log(ERROR, "set IPv4 socket options failed");
+			log(LOG_ERROR, "set IPv4 socket options failed");
 		}
 
 		//type of socket created
@@ -87,13 +87,13 @@ int main(int argc , char *argv[]){
 		// bind the socket to localhost port 8888
 		if (bind(master_socket[master_socket_size], (struct sockaddr *)&address, sizeof(address))<0) 
 		{
-			log(ERROR, "bind for IPv4 failed");
+			log(LOG_ERROR, "bind for IPv4 failed");
 			close(master_socket[master_socket_size]);
 		}
 		else {
 			if (listen(master_socket[0], MAX_PENDING_CONNECTIONS) < 0)
 			{
-				log(ERROR, "listen on IPv4 socket failes");
+				log(LOG_ERROR, "listen on IPv4 socket failes");
 				close(master_socket[master_socket_size]);
 			} else {
 				log(DEBUG, "Waiting for TCP IPv4 connections on socket %d\n", master_socket[master_socket_size]);
@@ -105,11 +105,11 @@ int main(int argc , char *argv[]){
 	struct sockaddr_in6 server6addr;
 	if ((master_socket[master_socket_size] = socket(AF_INET6, SOCK_STREAM, 0)) < 0)
 	{
-		log(ERROR, "socket IPv6 failed");
+		log(LOG_ERROR, "socket IPv6 failed");
 	} else {
 		if (setsockopt(master_socket[master_socket_size], SOL_SOCKET, SO_REUSEADDR, (char *)&opt,sizeof(opt)) < 0)
 		{
-			log(ERROR, "set IPv6 socket options failed");
+			log(LOG_ERROR, "set IPv6 socket options failed");
 		}
 		memset(&server6addr, 0, sizeof(server6addr));
 		server6addr.sin6_family = AF_INET6;
@@ -117,12 +117,12 @@ int main(int argc , char *argv[]){
 		server6addr.sin6_addr   = in6addr_any;
 		if (bind(master_socket[master_socket_size], (struct sockaddr *)&server6addr,sizeof(server6addr)) < 0)
 		{
-			log(ERROR, "bind for IPv6 failed");
+			log(LOG_ERROR, "bind for IPv6 failed");
 			close(master_socket[master_socket_size]);
 		} else {
 			if (listen(master_socket[master_socket_size], MAX_PENDING_CONNECTIONS) < 0)
 			{
-				log(ERROR, "listen on IPv6 failed");
+				log(LOG_ERROR, "listen on IPv6 failed");
 				close(master_socket[master_socket_size]);
 			} else {
 				log(DEBUG, "Waiting for TCP IPv6 connections on socket %d\n", master_socket[master_socket_size]);
@@ -178,7 +178,7 @@ int main(int argc , char *argv[]){
 
 		if ((activity < 0) && (errno!=EINTR)) 
 		{
-			log(ERROR, "select error, errno=%d",errno);
+			log(LOG_ERROR, "select error, errno=%d",errno);
 			continue;
 		}
 
@@ -194,7 +194,7 @@ int main(int argc , char *argv[]){
 			{
 				if ((new_socket = acceptTCPConnection(mSock)) < 0)
 				{
-					log(ERROR, "Accept error on master socket %d", mSock);
+					log(LOG_ERROR, "Accept error on master socket %d", mSock);
 					continue;
 				}
 
@@ -301,7 +301,7 @@ int udpSocket(int port) {
 	int sock;
 	struct sockaddr_in serverAddr;
 	if ( (sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
-		log(ERROR, "UDP socket creation failed, errno: %d %s", errno, strerror(errno));
+		log(LOG_ERROR, "UDP socket creation failed, errno: %d %s", errno, strerror(errno));
 		return sock;
 	}
 	log(DEBUG, "UDP socket %d created", sock);
@@ -312,7 +312,7 @@ int udpSocket(int port) {
 
 	if ( bind(sock, (const struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0 )
 	{
-		log(ERROR, "UDP bind failed, errno: %d %s", errno, strerror(errno));
+		log(LOG_ERROR, "UDP bind failed, errno: %d %s", errno, strerror(errno));
 		close(sock);
 		return -1;
 	}
@@ -357,7 +357,7 @@ void handleAddrInfo(int socket) {
 	struct addrinfo *addrList;
 	int rtnVal = getaddrinfo(buffer, NULL, &addrCriteria, &addrList);
 	if (rtnVal != 0) {
-		log(ERROR, "getaddrinfo() failed: %d: %s", rtnVal, gai_strerror(rtnVal));
+		log(LOG_ERROR, "getaddrinfo() failed: %d: %s", rtnVal, gai_strerror(rtnVal));
 		strcat(strcpy(bufferOut,"Can't resolve "), buffer);
 
 	} else {

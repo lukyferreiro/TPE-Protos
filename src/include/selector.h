@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <sys/time.h>
+#include <stdlib.h>
 
 /**
  * selector.c - un muliplexor de entrada salida
@@ -54,26 +55,12 @@ typedef enum {
     SELECTOR_IO = 5,      // I/O error check errno
 } selector_status;
 
-/** Retorna una descripción humana del fallo */
-const char* selector_error(const selector_status status);
 
 /** Opciones de inicialización del selector */
 struct selector_init {
     const int signal;               // Señal a utilizar para notificaciones internas
     struct timespec select_timeout; // Tiempo máximo de bloqueo durante `selector_iteratate'
 };
-
-/** Inicializa la librería */
-selector_status selector_init(const struct selector_init* c);
-
-/** Deshace la incialización de la librería */
-selector_status selector_close(void);
-
-/* Instancia un nuevo selector. returna NULL si no puede instanciar  */
-fd_selector selector_new(const size_t initial_elements);
-
-/** Destruye un selector creado por _new. Tolera NULLs */
-void selector_destroy(fd_selector s);
 
 /**
  * Intereses sobre un file descriptor (quiero leer, quiero escribir, …)
@@ -88,9 +75,6 @@ typedef enum {
     OP_READ = 1 << 0,
     OP_WRITE = 1 << 2,
 } fd_interest;
-
-/** Quita un interés de una lista de intereses */
-#define INTEREST_OFF(FLAG, MASK) ((FLAG) & ~(MASK))
 
 /** Argumento de todas las funciones callback del handler */
 struct selector_key {
@@ -147,7 +131,22 @@ selector_status selector_select(fd_selector s);
  */
 int selector_fd_set_nio(const int fd);
 
+/** Retorna una descripción humana del fallo */
+const char* selector_error(const selector_status status);
+
 /** Notifica que un trabajo bloqueante terminó */
 selector_status selector_notify_block(fd_selector s, const int fd);
+
+/** Inicializa la librería */
+selector_status selector_init(const struct selector_init* c);
+
+/** Deshace la incialización de la librería */
+selector_status selector_close(void);
+
+/* Instancia un nuevo selector. returna NULL si no puede instanciar  */
+fd_selector selector_new(const size_t initial_elements);
+
+/** Destruye un selector creado por _new. Tolera NULLs */
+void selector_destroy(fd_selector s);
 
 #endif

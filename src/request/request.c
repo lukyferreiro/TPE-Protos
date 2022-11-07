@@ -9,6 +9,7 @@
 #include <string.h> // memset
 
 #include "request.h"
+#include <stdlib.h>
 
 static void remaining_set(struct request_parser* p, const int n) {
     p->readBytes = 0;
@@ -170,7 +171,7 @@ extern enum request_state request_parser_consume(buffer* b, struct request_parse
     while (buffer_can_read(b)) {
         const uint8_t c = buffer_read(b);
         st = request_parser_feed(p, c);
-        if (request_is_done(st, errored)) {
+        if (request_parser_is_done(st, errored)) {
             break;
         }
     }
@@ -188,7 +189,7 @@ extern void request_parser_close(struct request_parser* p) {
     // Nada que hacer
 }
 
-extern int request_parser_marshall(buffer* b, const enum socks5_response_status status) {
+int request_parser_marshall(buffer* b, const enum socks5_response_status status) {
     size_t n;
     uint8_t* buff = buffer_write_ptr(b, &n);
     if (n < 10) {

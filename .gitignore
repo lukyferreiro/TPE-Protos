@@ -70,4 +70,12 @@ report.tasks
 strace_out
 valgrind_log.txt
 check
+
+# JetBrains IDE
+.idea/
+*.iml
+*.iws
+
+#Another files
+*.ini
 *.cppcheck

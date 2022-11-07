@@ -15,7 +15,7 @@
 
 typedef enum { DEBUG = 0,
                INFO,
-               ERROR,
+               LOG_ERROR,
                FATAL } LOG_LEVEL;
 
 extern LOG_LEVEL current_level;

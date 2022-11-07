@@ -32,56 +32,6 @@ static const unsigned max_pool = 50;    // Tamaño maximo
 static unsigned pool_size = 0;          // Tamaño actual
 static struct socks5* pool = 0;         // Pool propiamente dicho
 
-//-----------------------------------------------------------------------------
-static struct socks5* socks5_new(int client_fd);
-
-static void socks5_destroy_(struct socks5* s);
-static void socks5_destroy(struct socks5* s);
-
-/**
- * Declaración forward de los handlers de selección de una conexión
- * establecida entre un cliente y el proxy.
- * Handlers top level de la conexión pasiva.
- * son los que emiten los eventos a la maquina de estados.
- */
-static void socksv5_read(struct selector_key* key);
-static void socksv5_write(struct selector_key* key);
-static void socksv5_block(struct selector_key* key);
-static void socksv5_close(struct selector_key* key);
-static void socksv5_done(struct selector_key* key);
-
-// Declaraciones de hello
-static void on_hello_method(struct hello_parser* p, const uint8_t method);
-static void hello_read_init(const unsigned state, struct selector_key* key);
-static unsigned hello_process(const struct hello_st* d);
-static unsigned hello_read(struct selector_key* key);
-static unsigned hello_write(struct selector_key* key);
-static void hello_read_close(const unsigned state, struct selector_key* key);
-
-// Declaraciones de request
-static unsigned request_resolv_done(struct selector_key *key);
-static void request_init(const unsigned state, struct selector_key* key);
-static unsigned request_process(struct selector_key* key, const struct request_st* d);
-static unsigned request_read(struct selector_key* key);
-static void request_connecting_init(const unsigned state, struct selector_key *key);
-static unsigned request_connecting(struct selector_key *key);
-static unsigned request_write(struct selector_key *key);
-static void request_read_close(const unsigned state, struct selector_key* key);
-
-// Declaraciones de copy
-static void copy_init(const unsigned state, struct selector_key *key);
-static unsigned copy_read(struct selector_key *key);
-static unsigned copy_write(struct selector_key *key);
-//Declaraciones de userpass
-//-----------------------------------------------------------------------------
-
-static const struct fd_handler socks5_handler = {
-    .handle_read = socksv5_read,
-    .handle_write = socksv5_write,
-    .handle_close = socksv5_close,
-    .handle_block = socksv5_block,
-};
-
 /** Maquina de estados general */
 enum socks_v5state {
     /**
@@ -186,53 +136,7 @@ enum socks_v5state {
     ERROR,
 };
 
-/** Definición de handlers para cada estado */
-static const struct state_definition client_statbl[] = {
-    {
-        .state = HELLO_READ,
-        .on_arrival = hello_read_init,
-        .on_departure = hello_read_close,
-        .on_read_ready = hello_read,
-    },
-    {
-        .state = HELLO_WRITE,
-        .on_write_ready = hello_write,
-    },
-    {
-        .state = REQUEST_READ,
-        .on_arrival = request_init,
-        .on_departure = request_read_close,
-        .on_read_ready = request_read,
-    },
-    {
-        .state = REQUEST_WRITE,
-        .on_write_ready = request_write,
-    },
-    {
-        .state = REQUEST_RESOLV,
-        .on_block_ready = request_resolv_done,
-    },
-    {
-        .state = REQUEST_CONNECTING,
-        .on_arrival = request_connecting_init,
-        .on_write_ready = request_connecting,
-    },
-    {
-        .state = COPY,
-        .on_arrival = copy_init,
-        .on_departure = copy_read,
-        .on_read_ready = copy_write,
-    },
-    {
-        .state = USERPASS_READ
-        // ... ??
-    },
-    {
-        .state = USERPASS_WRITE
-        // ... ??
-    },
-    {.state = DONE},
-    {.state = ERROR}};
+
 
 /** Usado por HELLO_READ, HELLO_WRITE */
 struct hello_st {
@@ -331,6 +235,105 @@ struct socks5 {
     struct socks5* next;
 };
 
+//-----------------------------------------------------------------------------
+static struct socks5* socks5_new(int client_fd);
+
+static void socks5_destroy_(struct socks5* s);
+static void socks5_destroy(struct socks5* s);
+
+/**
+ * Declaración forward de los handlers de selección de una conexión
+ * establecida entre un cliente y el proxy.
+ * Handlers top level de la conexión pasiva.
+ * son los que emiten los eventos a la maquina de estados.
+ */
+static void socksv5_read(struct selector_key* key);
+static void socksv5_write(struct selector_key* key);
+static void socksv5_block(struct selector_key* key);
+static void socksv5_close(struct selector_key* key);
+static void socksv5_done(struct selector_key* key);
+
+// Declaraciones de hello
+static void on_hello_method(struct hello_parser* p, const uint8_t method);
+static void hello_read_init(const unsigned state, struct selector_key* key);
+static unsigned hello_process(const struct hello_st* d);
+static unsigned hello_read(struct selector_key* key);
+static unsigned hello_write(struct selector_key* key);
+static void hello_read_close(const unsigned state, struct selector_key* key);
+
+// Declaraciones de request
+static unsigned request_resolv_done(struct selector_key *key);
+static void request_init(const unsigned state, struct selector_key* key);
+static unsigned request_process(struct selector_key* key, const struct request_st* d);
+static unsigned request_read(struct selector_key* key);
+static void request_connecting_init(const unsigned state, struct selector_key *key);
+static unsigned request_connecting(struct selector_key *key);
+static unsigned request_write(struct selector_key *key);
+static void request_read_close(const unsigned state, struct selector_key* key);
+
+// Declaraciones de copy
+static void copy_init(const unsigned state, struct selector_key *key);
+static unsigned copy_read(struct selector_key *key);
+static unsigned copy_write(struct selector_key *key);
+//Declaraciones de userpass
+//-----------------------------------------------------------------------------
+
+static const struct fd_handler socks5_handler = {
+    .handle_read = socksv5_read,
+    .handle_write = socksv5_write,
+    .handle_close = socksv5_close,
+    .handle_block = socksv5_block,
+};
+
+
+/** Definición de handlers para cada estado */
+static const struct state_definition client_statbl[] = {
+    {
+        .state = HELLO_READ,
+        .on_arrival = hello_read_init,
+        .on_departure = hello_read_close,
+        .on_read_ready = hello_read,
+    },
+    {
+        .state = HELLO_WRITE,
+        .on_write_ready = hello_write,
+    },
+    {
+        .state = REQUEST_READ,
+        .on_arrival = request_init,
+        .on_departure = request_read_close,
+        .on_read_ready = request_read,
+    },
+    {
+        .state = REQUEST_WRITE,
+        .on_write_ready = request_write,
+    },
+    {
+        .state = REQUEST_RESOLV,
+        .on_block_ready = request_resolv_done,
+    },
+    {
+        .state = REQUEST_CONNECTING,
+        .on_arrival = request_connecting_init,
+        .on_write_ready = request_connecting,
+    },
+    {
+        .state = COPY,
+        .on_arrival = copy_init,
+        .on_departure = copy_read,
+        .on_read_ready = copy_write,
+    },
+    {
+        .state = USERPASS_READ
+        // ... ??
+    },
+    {
+        .state = USERPASS_WRITE
+        // ... ??
+    },
+    {.state = DONE},
+    {.state = ERROR}};
+
 ////////////////////////////////////////////////////////////////////////////////
 //-----------------------------------SOCKS5-------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
@@ -347,7 +350,7 @@ static struct socks5* socks5_new(int client_fd) {
         ret->next = 0;
     }
     if (ret == NULL) {
-        log(ERROR, "Failed to create socks");
+        log(LOG_ERROR, "Failed to create socks");
         goto finally;
     }
 
@@ -459,6 +462,8 @@ void socksv5_passive_accept(struct selector_key* key) {
     struct socks5* state = NULL;
     const int client = accept(key->fd, (struct sockaddr*)&client_addr, &client_addr_len);
 
+    
+
     if (client == -1) {
         goto fail;
     }
@@ -549,7 +554,7 @@ static unsigned hello_process(const struct hello_st* d) {
     unsigned ret = HELLO_WRITE;
     uint8_t m = d->method;
 
-    if (-1 == hello_marshall(d->wb, m)) {
+    if (-1 == hello_parser_marshall(d->wb, m)) {
         ret = ERROR;
     }
     if (METHOD_NO_ACCEPTABLE_METHODS == m) {
@@ -628,9 +633,9 @@ static unsigned request_read(struct selector_key* key) {
     ssize_t n = recv(key->fd, ptr, count, 0);
     if (n > 0) {
         buffer_write_adv(b, n);
-        int st = request_consume(b, &d->parser, &error);
-        if (request_is_done(st, 0)) {
-            ret = request_proccess(key, d);
+        int st = request_parser_consume(b, &d->parser, &error);
+        if (request_parser_is_done(st, 0)) {
+            ret = request_process(key, d);
         }
     } else {
         ret = ERROR;
