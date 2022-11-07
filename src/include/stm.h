@@ -20,10 +20,10 @@
  */
 
 struct state_machine {
-    unsigned initial;                           // Declaracion de cual es el estado inicial
-    const struct state_definition* states;      // Declaracion de los estados: deben estar ordenados segun .[].state.
-    unsigned max_state;                         // Cantidad de estados
-    const struct state_definition* current;     // Estado actual
+    unsigned initial;                       // Declaracion de cual es el estado inicial
+    const struct state_definition* states;  // Declaracion de los estados: deben estar ordenados segun .[].state.
+    unsigned max_state;                     // Cantidad de estados
+    const struct state_definition* current; // Estado actual
 };
 
 /** Definición de un estado de la máquina de estados*/

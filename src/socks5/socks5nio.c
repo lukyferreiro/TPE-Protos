@@ -29,6 +29,8 @@
 #define ATTACHMENT(key) ((struct socks5*)(key)->data)
 
 //-----------------------------------------------------------------------------
+static struct socks5* socks5_new(int client_fd);
+
 static void socks5_destroy_(struct socks5* s);
 static void socks5_destroy(struct socks5* s);
 
@@ -113,32 +115,31 @@ static const struct state_definition client_statbl[] = {
     {
         .state = HELLO_WRITE,
         .on_write_ready = hello_write,
-        // ... ?? 
+        // ... ??
     },
     {
         .state = REQUEST_READ,
-        // ... ?? 
+        // ... ??
     },
     {
         .state = REQUEST_WRITE,
-        // ... ?? 
+        // ... ??
     },
     {.state = DONE},
-    {.state = ERROR}
-};
+    {.state = ERROR}};
 
 /** Usado por HELLO_READ, HELLO_WRITE */
 struct hello_st {
-    buffer* rb;     // Buffer de escritura utilizado para I/O
-    buffer* wb;     // Buffer de lectura utilizado para I/O
-    struct hello_parser parser;     //TODO hacer el parser del hello
-    uint8_t method; // El metodo de autenticacion seleccionado
+    buffer* rb;                 // Buffer de escritura utilizado para I/O
+    buffer* wb;                 // Buffer de lectura utilizado para I/O
+    struct hello_parser parser; // TODO hacer el parser del hello
+    uint8_t method;             // El metodo de autenticacion seleccionado
 };
 
 struct request_st {
-    buffer* rb;     // Buffer de escritura utilizado para I/O
-    buffer* wb;     // Buffer de lectura utilizado para I/O
-    struct request_parser parser;   //TODO hacer el parser del request
+    buffer* rb;                   // Buffer de escritura utilizado para I/O
+    buffer* wb;                   // Buffer de lectura utilizado para I/O
+    struct request_parser parser; // TODO hacer el parser del request
     //...
 };
 
@@ -180,6 +181,12 @@ struct socks5 {
 //-----------------------------------SOCKS5-------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
 
+static struct socks5* socks5_new(int client_fd) {
+    struct socks5* socks5;
+    //...
+    return socks5;
+}
+
 /** Realmente destruye */
 static void socks5_destroy_(struct socks5* s) {
     if (s->origin_resolution != NULL) {
@@ -194,7 +201,7 @@ static void socks5_destroy_(struct socks5* s) {
  */
 static void socks5_destroy(struct socks5* s) {
     if (s == NULL) {
-        // nada para hacer
+        // Nada para hacer
     } else if (s->references == 1) {
         if (s != NULL) {
             if (pool_size < max_pool) {
@@ -221,7 +228,6 @@ void socksv5_pool_destroy(void) {
 static void socksv5_read(struct selector_key* key) {
     struct state_machine* stm = &ATTACHMENT(key)->stm;
     const enum socks_v5state st = stm_handler_read(stm, key);
-
     if (ERROR == st || DONE == st) {
         socksv5_done(key);
     }
@@ -230,7 +236,6 @@ static void socksv5_read(struct selector_key* key) {
 static void socksv5_write(struct selector_key* key) {
     struct state_machine* stm = &ATTACHMENT(key)->stm;
     const enum socks_v5state st = stm_handler_write(stm, key);
-
     if (ERROR == st || DONE == st) {
         socksv5_done(key);
     }
@@ -239,7 +244,6 @@ static void socksv5_write(struct selector_key* key) {
 static void socksv5_block(struct selector_key* key) {
     struct state_machine* stm = &ATTACHMENT(key)->stm;
     const enum socks_v5state st = stm_handler_block(stm, key);
-
     if (ERROR == st || DONE == st) {
         socksv5_done(key);
     }
@@ -269,14 +273,15 @@ void socksv5_passive_accept(struct selector_key* key) {
     struct sockaddr_storage client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
     struct socks5* state = NULL;
-
     const int client = accept(key->fd, (struct sockaddr*)&client_addr, &client_addr_len);
+
     if (client == -1) {
         goto fail;
     }
     if (selector_fd_set_nio(client) == -1) {
         goto fail;
     }
+
     state = socks5_new(client);
     if (state == NULL) {
         // sin un estado, nos es imposible manejaro.
@@ -284,6 +289,7 @@ void socksv5_passive_accept(struct selector_key* key) {
         // que se liberó alguna conexión.
         goto fail;
     }
+
     memcpy(&state->client_addr, &client_addr, client_addr_len);
     state->client_addr_len = client_addr_len;
 
@@ -291,6 +297,7 @@ void socksv5_passive_accept(struct selector_key* key) {
         goto fail;
     }
     return;
+
 fail:
     if (client != -1) {
         close(client);
@@ -305,7 +312,6 @@ fail:
 /** Callback del parser utilizado en `read_hello' */
 static void on_hello_method(struct hello_parser* p, const uint8_t method) {
     uint8_t* selected = p->data;
-
     if (SOCKS_HELLO_NOAUTHENTICATION_REQUIRED == method) {
         *selected = method;
     }
@@ -314,7 +320,6 @@ static void on_hello_method(struct hello_parser* p, const uint8_t method) {
 /** Inicializa las variables de los estados HELLO_… */
 static void hello_read_init(const unsigned state, struct selector_key* key) {
     struct hello_st* d = &ATTACHMENT(key)->client.hello;
-
     d->rb = &(ATTACHMENT(key)->read_buffer);
     d->wb = &(ATTACHMENT(key)->write_buffer);
     d->parser.data = &d->method;
@@ -326,12 +331,10 @@ static unsigned hello_read(struct selector_key* key) {
     struct hello_st* d = &ATTACHMENT(key)->client.hello;
     unsigned ret = HELLO_READ;
     bool error = false;
-    uint8_t* ptr;
     size_t count;
-    ssize_t n;
+    uint8_t* ptr = buffer_write_ptr(d->rb, &count);
+    ssize_t n = recv(key->fd, ptr, count, 0);
 
-    ptr = buffer_write_ptr(d->rb, &count);
-    n = recv(key->fd, ptr, count, 0);
     if (n > 0) {
         buffer_write_adv(d->rb, n);
         const enum hello_state st = hello_consume(d->rb, &d->parser, &error);
@@ -369,8 +372,8 @@ static unsigned hello_write(struct selector_key* key) {
     struct hello_st* d = &ATTACHMENT(key)->client.hello;
     unsigned ret = HELLO_WRITE;
     size_t count;
-    uint8_t* ptr = buffer_read_ptr(d->wb, &count);;
-    ssize_t n = send(key->fd, ptr, count, MSG_NOSIGNAL);;
+    uint8_t* ptr = buffer_read_ptr(d->wb, &count);
+    ssize_t n = send(key->fd, ptr, count, MSG_NOSIGNAL);
 
     if (n == -1) {
         ret = ERROR;

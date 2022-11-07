@@ -83,9 +83,9 @@
 typedef struct buffer buffer;
 struct buffer {
     uint8_t* data;
-    uint8_t* limit;     // Límite superior del buffer (inmutable) 
-    uint8_t* read;      // Puntero de lectura
-    uint8_t* write;     // Puntero de escritura
+    uint8_t* limit; // Límite superior del buffer (inmutable)
+    uint8_t* read;  // Puntero de lectura
+    uint8_t* write; // Puntero de escritura
 };
 
 /** Inicializa el buffer sin utilizar el heap */

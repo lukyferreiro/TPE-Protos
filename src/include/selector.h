@@ -46,12 +46,12 @@ typedef struct fdselector* fd_selector;
 
 /** Valores de retorno. */
 typedef enum {
-    SELECTOR_SUCCESS = 0,   // Llamada exitosa
-    SELECTOR_ENOMEM = 1,    // No pudimos alocar memoria
-    SELECTOR_MAXFD = 2,     // Llegamos al límite de descriptores que la plataforma puede manejar
-    SELECTOR_IARGS = 3,     // Illegal argument
-    SELECTOR_FDINUSE = 4,   // Descriptor que ya esta en uso      
-    SELECTOR_IO = 5,        // I/O error check errno
+    SELECTOR_SUCCESS = 0, // Llamada exitosa
+    SELECTOR_ENOMEM = 1,  // No pudimos alocar memoria
+    SELECTOR_MAXFD = 2,   // Llegamos al límite de descriptores que la plataforma puede manejar
+    SELECTOR_IARGS = 3,   // Illegal argument
+    SELECTOR_FDINUSE = 4, // Descriptor que ya esta en uso
+    SELECTOR_IO = 5,      // I/O error check errno
 } selector_status;
 
 /** Retorna una descripción humana del fallo */
@@ -59,8 +59,8 @@ const char* selector_error(const selector_status status);
 
 /** Opciones de inicialización del selector */
 struct selector_init {
-    const int signal;               // Señal a utilizar para notificaciones internas 
-    struct timespec select_timeout; // Tiempo máximo de bloqueo durante `selector_iteratate' 
+    const int signal;               // Señal a utilizar para notificaciones internas
+    struct timespec select_timeout; // Tiempo máximo de bloqueo durante `selector_iteratate'
 };
 
 /** Inicializa la librería */
@@ -94,9 +94,9 @@ typedef enum {
 
 /** Argumento de todas las funciones callback del handler */
 struct selector_key {
-    fd_selector s;  // El selector que dispara el evento
-    int fd;         // El file descriptor en cuestión 
-    void* data;     // Dato provisto por el usuario en cuestion
+    fd_selector s; // El selector que dispara el evento
+    int fd;        // El file descriptor en cuestión
+    void* data;    // Dato provisto por el usuario en cuestion
 };
 
 /** Manejador de los diferentes eventos */
@@ -106,7 +106,7 @@ typedef struct fd_handler {
     void (*handle_block)(struct selector_key* key);
     // Se llama cuando se desregistra el fd
     // Seguramente deba liberar los recusos alocados en data.
-    void (*handle_close)(struct selector_key* key);  
+    void (*handle_close)(struct selector_key* key);
 } fd_handler;
 
 /**
@@ -121,7 +121,7 @@ typedef struct fd_handler {
  * @return 0 si fue exitoso el registro.
  */
 selector_status selector_register(fd_selector s, const int fd, const fd_handler* handler,
-                  const fd_interest interest, void* data);
+                                  const fd_interest interest, void* data);
 
 /**
  * Desregistra un file descriptor del selector
