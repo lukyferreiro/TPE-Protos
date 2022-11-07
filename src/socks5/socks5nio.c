@@ -33,8 +33,6 @@ static unsigned pool_size = 0;          // Tamaño actual
 static struct socks5* pool = 0;         // Pool propiamente dicho
 
 //-----------------------------------------------------------------------------
-static const struct state_definition* socks5_describe_states(void);
-
 static struct socks5* socks5_new(int client_fd);
 
 static void socks5_destroy_(struct socks5* s);
@@ -61,7 +59,7 @@ static unsigned hello_write(struct selector_key* key);
 static void hello_read_close(const unsigned state, struct selector_key* key);
 
 // Declaraciones de request
-static void request_init(cont unsigned state, struct selector_key* key);
+static void request_init(const unsigned state, struct selector_key* key);
 static unsigned request_process(struct selector_key* key, const struct hello_st* d);
 static unsigned request_read(struct selector_key* key);
 //-----------------------------------------------------------------------------
@@ -326,10 +324,6 @@ struct socks5 {
 //-----------------------------------SOCKS5-------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
 
-static const struct state_definition* socks5_describe_states(void) {
-    return client_statbl;
-}
-
 /** Crea un nuevo 'struct socks5' */
 static struct socks5* socks5_new(int client_fd) {
     struct socks5* ret;
@@ -353,7 +347,7 @@ static struct socks5* socks5_new(int client_fd) {
     ret->client_addr_len = sizeof(ret->client_addr);
     ret->stm.initial = HELLO_READ;
     ret->stm.max_state = ERROR;
-    ret->stm.states = sock5_describe_states();
+    ret->stm.states = client_statbl;
 
     stm_init(&ret->stm);
 
@@ -511,8 +505,12 @@ static unsigned hello_read(struct selector_key* key) {
     unsigned ret = HELLO_READ;
     bool error = false;
     size_t count;
-    uint8_t* ptr = buffer_write_ptr(d->rb, &count);
-    ssize_t n = recv(key->fd, ptr, count, 0);
+    uint8_t* ptr;
+    ssize_t n;
+
+    //Leo bytes del socket y los dejo en el buffer
+    ptr = buffer_write_ptr(d->rb, &count);
+    n = recv(key->fd, ptr, count, 0);
 
     if (n > 0) {
         buffer_write_adv(d->rb, n);
@@ -531,7 +529,7 @@ static unsigned hello_read(struct selector_key* key) {
     return error ? ERROR : ret;
 }
 
-/** Procesamiento del mensaje `hello' */
+/** Procesamiento del mensaje 'hello' */
 static unsigned hello_process(const struct hello_st* d) {
     unsigned ret = HELLO_WRITE;
     uint8_t m = d->method;
@@ -547,12 +545,17 @@ static unsigned hello_process(const struct hello_st* d) {
     return ret;
 }
 
+/** Escribe todos los bytes de la respuesta al mensaje 'hello' */
 static unsigned hello_write(struct selector_key* key) {
     struct hello_st* d = &ATTACHMENT(key)->client.hello;
     unsigned ret = HELLO_WRITE;
     size_t count;
-    uint8_t* ptr = buffer_read_ptr(d->wb, &count);
-    ssize_t n = send(key->fd, ptr, count, MSG_NOSIGNAL);
+    uint8_t* ptr;
+    ssize_t n;
+
+    //Leo bytes del sockey y los mando
+    ptr = buffer_read_ptr(d->wb, &count);
+    n = send(key->fd, ptr, count, MSG_NOSIGNAL);
 
     if (n == -1) {
         ret = ERROR;
@@ -581,12 +584,12 @@ static void hello_read_close(const unsigned state, struct selector_key* key) {
 ////////////////////////////////////////////////////////////////////////////////
 
 /** Inicializa las variables de los estados REQUEST*/
-static void request_init(cont unsigned state, struct selector_key* key) {
+static void request_init(const unsigned state, struct selector_key* key) {
     struct request_st* d = &ATTACHMENT(key)->client.request;
     d->rb = &ATTACHMENT(key)->read_buffer;
     d->wb = &ATTACHMENT(key)->write_buffer;
     d->parser.request = &d->request;
-    d->status = status_general_SOCK5_server_failure;
+    d->status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
     request_parser_init(&d->parser);
     d->client_fd = &ATTACHMENT(key)->client_fd;
     d->origin_fd = &ATTACHMENT(key)->origin_fd;
