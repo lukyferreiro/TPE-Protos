@@ -9,9 +9,9 @@
 
 #include "hello.h"
 
-extern void hello_parser_init(struct hello_parser* p, void (*on_auth_method)(hello_parser* p, uint8_t method)) {
+extern void hello_parser_init(struct hello_parser* p, void (*on_authentication_method)(hello_parser* p, uint8_t method)) {
     p->state = HELLO_VERSION;
-    p->on_authentication_method = on_auth_method;
+    p->on_authentication_method = on_authentication_method;
     p->remaining = 0;
 }
 
