@@ -286,7 +286,6 @@ enum socks5_response_status cmd_resolve(struct request* request, struct sockaddr
             request->dest_addr.ipv4.sin_family = hp->h_addrtype;
             memcpy((char*)&request->dest_addr.ipv4.sin_addr, *hp->h_addr_list, hp->h_length);
         }
-        /* no break */
         case SOCKS5_REQ_ADDRTYPE_IPV4:
             *domain = AF_INET;
             addr = (struct sockaddr*)&(request->dest_addr.ipv4);
