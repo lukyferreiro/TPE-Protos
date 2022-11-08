@@ -264,7 +264,8 @@ static void hello_read_close(const unsigned state, struct selector_key* key);
 // Declaraciones de request
 static unsigned request_resolv_done(struct selector_key *key);
 static void request_init(const unsigned state, struct selector_key* key);
-static unsigned request_process(struct selector_key *key, const struct request_st *d);
+static unsigned request_process(struct selector_key *key, struct request_st *d);
+static unsigned request_connect_to_origin(struct selector_key *key, struct request_st *d);
 static unsigned request_read(struct selector_key* key);
 static void request_connecting_init(const unsigned state, struct selector_key *key);
 static unsigned request_connecting(struct selector_key *key);
@@ -593,8 +594,6 @@ static unsigned hello_write(struct selector_key* key) {
         }
     }
 
-    log(DEBUG, "ACA FALLA1");
-
     return ret;
 }
 
@@ -602,7 +601,6 @@ static unsigned hello_write(struct selector_key* key) {
 static void hello_read_close(const unsigned state, struct selector_key* key) {
     struct hello_st* d = &ATTACHMENT(key)->client.hello;
     hello_parser_close(&d->parser);
-    log(DEBUG, "ACA FALLA0");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -622,13 +620,82 @@ static void request_init(const unsigned state, struct selector_key* key) {
     d->origin_addr = &ATTACHMENT(key)->origin_addr;
     d->origin_addr_len = &ATTACHMENT(key)->origin_addr_len;
     d->origin_domain = &ATTACHMENT(key)->origin_domain;
-    log(DEBUG, "ACA FALLA2");
 }
 
 /** Procesamiento del mensaje `request', aca decidimos si cambiamos al estado REQUEST_CONECTING o REQUEST_RESOLVE */
-static unsigned request_process(struct selector_key* key, const struct request_st* d) {
+static unsigned request_process(struct selector_key* key, struct request_st* d) {
+    
+    //TODO:
+    //PROCESAMIENTO DE REQUEST DEL CLIENTE SOLO PARA IPV4
+    
+    unsigned ret;
+    
+    ATTACHMENT(key)->origin_domain = AF_INET;
+    d->request.dest_addr.ipv4.sin_port = d->request.dest_port;
+    ATTACHMENT(key)->origin_addr_len = sizeof(d->request.dest_addr.ipv4);
+    memcpy(&ATTACHMENT(key)->origin_addr, &d->request.dest_addr, sizeof(d->request.dest_addr.ipv4));
+    
+    ret = request_connect_to_origin(key, d);
+    return ret;
+} 
+
+static unsigned request_resolv_done(struct selector_key *key) {
     //...
 } 
+
+static unsigned request_connect_to_origin(struct selector_key *key, struct request_st *d) {
+
+    enum socks5_response_status status = d->status;
+    int *fd = d->origin_fd;
+    bool error = false;
+    char tmp[200];
+
+    // Creamos el socket para conectarnos a origin
+    *fd = socket(ATTACHMENT(key)->origin_domain, SOCK_STREAM, 0);
+    if (*fd == -1) {
+        error = true;
+        goto finally;
+    }
+    // Lo seteamos como no bloqueante
+    if (selector_fd_set_nio(*fd) == -1) {
+        goto finally;
+    }
+
+    int aux = connect(*fd,(const struct sockaddr *)&ATTACHMENT(key)->origin_addr, ATTACHMENT(key)->origin_addr_len);
+    if (aux == -1) {
+        if (errno == EINPROGRESS) {
+            log(INFO, "Connect to %s in progress", inet_ntop(AF_INET, &d->request.dest_addr.ipv4.sin_addr, tmp, INET_ADDRSTRLEN));
+            selector_status st = selector_set_interest_key(key, OP_NOOP);
+            if (st != SELECTOR_SUCCESS) {
+                error = true;
+                goto finally;
+            }
+            st = selector_register(key->s, *fd, &socks5_handler, OP_WRITE, key->data);
+            if (st != SELECTOR_SUCCESS) {
+                error = true;
+                goto finally;
+            }
+            ATTACHMENT(key)->references += 1;
+        } else {
+            log(INFO, "Fail connecting to %s ", inet_ntop(AF_INET, &d->request.dest_addr.ipv4.sin_addr, tmp, INET_ADDRSTRLEN));
+            status = errno_to_socks(errno);
+            error = true;
+            goto finally;
+        }
+    } else {
+        abort();
+    }
+
+finally:
+    if (error) {
+        if (*fd != -1) {
+            close(*fd);
+            *fd = -1;
+        }
+    }
+    d->status = status;
+    return REQUEST_CONNECTING;
+}
 
 /** Lee todos los bytes del mensaje 'request' y inicia su proceso */
 static unsigned request_read(struct selector_key* key) {
@@ -652,13 +719,8 @@ static unsigned request_read(struct selector_key* key) {
     } else {
         ret = ERROR;
     }
-    log(DEBUG, "ACA FALLA3");
     return error ? ERROR : ret;
 }
-
-static unsigned request_resolv_done(struct selector_key *key) {
-    //...
-} 
 
 static void request_connecting_init(const unsigned state, struct selector_key *key) {
     //...
