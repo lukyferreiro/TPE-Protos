@@ -44,7 +44,7 @@ START_TEST (test_request_connect_domain) {
     request_consume(&b, &parser, &errored);
     
     ck_assert_uint_eq(false, errored);
-    ck_assert_uint_eq(socks_req_cmd_connect,     request.cmd);
+    ck_assert_uint_eq(socks5_req_cmd_connect,     request.cmd);
     ck_assert_uint_eq(socks_req_addrtype_domain, request.dest_addr_type);
     ck_assert_str_eq ("www.itba.edu.ar",         request.dest_addr.fqdn);
     ck_assert_uint_eq(htons(80),                 request.dest_port);
@@ -70,7 +70,7 @@ START_TEST (test_request_connect_ipv4) {
     
     ck_assert_uint_eq(false, errored);
     ck_assert_uint_eq(request_done,              st);
-    ck_assert_uint_eq(socks_req_cmd_connect,     request.cmd);
+    ck_assert_uint_eq(socks5_req_cmd_connect,     request.cmd);
     ck_assert_uint_eq(socks_req_addrtype_ipv4,   request.dest_addr_type);
     ck_assert_uint_eq(htons(9090),               request.dest_port);
 
@@ -95,7 +95,7 @@ START_TEST (test_request_connect_ipv6) {
     
     ck_assert_uint_eq(false, errored);
     ck_assert_uint_eq(request_done,              st);
-    ck_assert_uint_eq(socks_req_cmd_connect,     request.cmd);
+    ck_assert_uint_eq(socks5_req_cmd_connect,     request.cmd);
     ck_assert_uint_eq(socks_req_addrtype_ipv6,   request.dest_addr_type);
     ck_assert_uint_eq(htons(9090),               request.dest_port);
 
@@ -123,7 +123,7 @@ START_TEST (test_request_connect_multiple_messages) {
     request_consume(&b, &parser, &errored);
 
     ck_assert_uint_eq(false, errored);
-    ck_assert_uint_eq(socks_req_cmd_connect,     request.cmd);
+    ck_assert_uint_eq(socks5_req_cmd_connect,     request.cmd);
     ck_assert_uint_eq(socks_req_addrtype_domain, request.dest_addr_type);
     ck_assert_str_eq ("www.itba.edu.ar",         request.dest_addr.fqdn);
     ck_assert_uint_eq(htons(80),                 request.dest_port);
@@ -134,7 +134,7 @@ START_TEST (test_request_connect_multiple_messages) {
 
     request_consume(&b, &parser, &errored);
     ck_assert_uint_eq(false, errored);
-    ck_assert_uint_eq(socks_req_cmd_connect,     request.cmd);
+    ck_assert_uint_eq(socks5_req_cmd_connect,     request.cmd);
     ck_assert_uint_eq(socks_req_addrtype_domain, request.dest_addr_type);
     ck_assert_str_eq ("www.itba.edu.ar",         request.dest_addr.fqdn);
     ck_assert_uint_eq(htons(80),                 request.dest_port);

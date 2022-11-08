@@ -451,7 +451,7 @@ static void socksv5_done(struct selector_key* key) {
 
     for (unsigned i = 0; i < N(fds); i++) {
         if (fds[i] != -1) {
-            if (SELECTOR_SUCCESS != selector_unregister_fd(key->s, fds[i])) {
+            if (selector_unregister_fd(key->s, fds[i]) != SELECTOR_SUCCESS) {
                 abort();
             }
             close(fds[i]);
@@ -485,8 +485,7 @@ void socksv5_passive_accept(struct selector_key* key) {
     memcpy(&state->client_addr, &client_addr, client_addr_len);
     state->client_addr_len = client_addr_len;
 
-    status = selector_register(key->s, client, &socks5_handler, OP_READ, state);
-    if (status != SELECTOR_SUCCESS) {
+    if (selector_register(key->s, client, &socks5_handler, OP_READ, state) != SELECTOR_SUCCESS) {
         log(LOG_ERROR, "Error while registering in selector");
         goto fail;
     }
@@ -545,7 +544,7 @@ static unsigned hello_read(struct selector_key* key) {
         /* const enum hello_state st = hello_parser_consume(d->rb, &d->parser, &error);
         if (hello_parser_is_done(st, 0)) { */
         if (hello_parser_consume(d->rb, &d->parser, &error)) {
-            if (SELECTOR_SUCCESS == selector_set_interest_key(key, OP_WRITE)) {
+            if (selector_set_interest_key(key, OP_WRITE) == SELECTOR_SUCCESS) {
                 ret = hello_process(d);
             } else {
                 ret = ERROR;
@@ -589,7 +588,7 @@ static unsigned hello_write(struct selector_key* key) {
     } else {
         buffer_read_adv(d->wb, n);
         if (!buffer_can_read(d->wb)) {
-            if (SELECTOR_SUCCESS == selector_set_interest_key(key, OP_READ)) {
+            if (selector_set_interest_key(key, OP_READ) == SELECTOR_SUCCESS) {
                 ret = REQUEST_READ;
             } else {
                 ret = ERROR;
@@ -665,18 +664,18 @@ static unsigned request_process(struct selector_key* key, struct request_st* d) 
                     if (k == NULL) {
                         ret = REQUEST_WRITE;
                         d->status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
-                        if (SELECTOR_SUCCESS != selector_set_interest_key(key, OP_WRITE))
+                        if (selector_set_interest_key(key, OP_WRITE) != SELECTOR_SUCCESS)
                             ret = ERROR;
                     } else {
                         memcpy(k, key, sizeof(*k));
-                        if (-1 == pthread_create(&tid, 0, request_resolv_blocking, k)) {
-                            ret = REQUEST_WRITE;
-                            d->status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
-                            if (SELECTOR_SUCCESS != selector_set_interest_key(key, OP_WRITE))
+                        if (pthread_create(&tid, 0, request_resolv_blocking, k) != -1) {
+                            ret = REQUEST_RESOLV;
+                            if (selector_set_interest_key(key, OP_NOOP) != SELECTOR_SUCCESS)
                                 ret = ERROR;
                         } else {
-                            ret = REQUEST_RESOLV;
-                            if (SELECTOR_SUCCESS != selector_set_interest_key(key, OP_NOOP))
+                            ret = REQUEST_WRITE;
+                            d->status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
+                            if (selector_set_interest_key(key, OP_WRITE) != SELECTOR_SUCCESS)
                                 ret = ERROR;
                         }
                     }
@@ -685,7 +684,7 @@ static unsigned request_process(struct selector_key* key, struct request_st* d) 
                 default: {
                     ret = REQUEST_WRITE;
                     d->status = SOCKS5_STATUS_ADDRESS_TYPE_NOT_SUPPORTED;
-                    if (SELECTOR_SUCCESS != selector_set_interest_key(key, OP_WRITE)) {
+                    if (selector_set_interest_key(key, OP_WRITE) != SELECTOR_SUCCESS) {
                         ret = ERROR;
                         d->status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
                     }
@@ -744,7 +743,8 @@ static unsigned request_connect_to_origin(struct selector_key* key, struct reque
     enum socks5_response_status status = d->status;
     int* fd = d->origin_fd;
     bool error = false;
-    char tmp[200];
+    char* tmp = (char*)malloc(INET_ADDRSTRLEN * sizeof(char));
+    char* addr = inet_ntop(AF_INET, &d->request.dest_addr.ipv4.sin_addr, tmp, INET_ADDRSTRLEN);
 
     // Creamos el socket para conectarnos a origin
     *fd = socket(s->origin_domain, SOCK_STREAM, 0);
@@ -760,20 +760,18 @@ static unsigned request_connect_to_origin(struct selector_key* key, struct reque
     int aux = connect(*fd, (const struct sockaddr*)&s->origin_addr, s->origin_addr_len);
     if (aux == -1) {
         if (errno == EINPROGRESS) {
-            log(INFO, "Connect to %s in progress", inet_ntop(AF_INET, &d->request.dest_addr.ipv4.sin_addr, tmp, INET_ADDRSTRLEN));
-            selector_status st = selector_set_interest_key(key, OP_NOOP);
-            if (st != SELECTOR_SUCCESS) {
+            log(INFO, "Connect to %s in progress", addr);
+            if (selector_set_interest_key(key, OP_NOOP) != SELECTOR_SUCCESS) {
                 error = true;
                 goto finally;
             }
-            st = selector_register(key->s, *fd, &socks5_handler, OP_WRITE, key->data);
-            if (st != SELECTOR_SUCCESS) {
+            if (selector_register(key->s, *fd, &socks5_handler, OP_WRITE, key->data) != SELECTOR_SUCCESS) {
                 error = true;
                 goto finally;
             }
             s->references += 1;
         } else {
-            log(INFO, "Fail connecting to %s ", inet_ntop(AF_INET, &d->request.dest_addr.ipv4.sin_addr, tmp, INET_ADDRSTRLEN));
+            log(INFO, "Fail connecting to %s ", addr);
             status = errno_to_socks(errno);
             error = true;
             goto finally;
@@ -807,9 +805,8 @@ static unsigned request_read(struct selector_key* key) {
 
     if (n > 0) {
         buffer_write_adv(b, n);
-        /* int st = request_parser_consume(b, &d->parser, &error);
-        if (request_parser_is_done(st, 0)) { */
-        if (request_parser_consume(b, &d->parser, &error)) {
+        int st = request_parser_consume(b, &d->parser, &error);
+        if (request_parser_is_done(st, 0)) { 
             ret = request_process(key, d);
         }
     } else {
@@ -824,8 +821,10 @@ static unsigned request_resolv_done(struct selector_key* key) {
     struct request_st* d = &s->client.request;
 
     if (s->origin_resolution == 0) {
+        log(INFO, "Resolution failed");
         d->status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
     } else {
+        log(DEBUG, "Resolution success");
         s->origin_domain = s->origin_resolution->ai_family;
         s->origin_addr_len = s->origin_resolution->ai_addrlen;
         memcpy(&s->origin_addr, s->origin_resolution->ai_addr, s->origin_resolution->ai_addrlen);
@@ -867,7 +866,7 @@ static unsigned request_connecting(struct selector_key* key) {
             *d->status = errno_to_socks(error);
         }
     }
-    if (request_parser_marshall(d->wb, *d->status) == -1) {
+     if (request_parser_marshall(d->wb, *d->status) == -1) { 
         *d->status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
         abort(); // El buffer tiene que ser mas grande en la variable
     }
@@ -909,7 +908,7 @@ static unsigned request_write(struct selector_key* key) {
         }
     }
 
-    //log_request(d->status, (const struct sockaddr*)&s->client_addr, (const struct sockaddr*)&s->origin_addr);
+    // log_request(d->status, (const struct sockaddr*)&s->client_addr, (const struct sockaddr*)&s->origin_addr);
 
     return ret;
 }
@@ -948,14 +947,16 @@ static void copy_init(const unsigned state, struct selector_key* key) {
 static fd_interest copy_compute_interests(fd_selector s, struct copy* d) {
     fd_interest ret = OP_NOOP;
 
-    if (((d->duplex & OP_READ) && buffer_can_write(d->rb))) {
-        ret |= OP_READ;
-    }
-    if ((d->duplex & OP_WRITE) && buffer_can_read(d->wb)) {
-        ret |= OP_WRITE;
-    }
-    if (SELECTOR_SUCCESS != selector_set_interest(s, *d->fd, ret)) {
-        abort();
+    if (*d->fd != -1) {
+        if (((d->duplex & OP_READ) && buffer_can_write(d->rb))) {
+            ret |= OP_READ;
+        }
+        if ((d->duplex & OP_WRITE) && buffer_can_read(d->wb)) {
+            ret |= OP_WRITE;
+        }
+        if (selector_set_interest(s, *d->fd, ret) != SELECTOR_SUCCESS) {
+            abort();
+        }
     }
 
     return ret;
@@ -964,12 +965,7 @@ static fd_interest copy_compute_interests(fd_selector s, struct copy* d) {
 /** Elige la estructura de copia correcta de cada fd (origin o client) */
 static struct copy* copy_prt(struct selector_key* key) {
     struct copy* d = &ATTACHMENT(key)->client.copy;
-    if (*d->fd == key->fd) {
-        // OK
-    } else {
-        d = d->other;
-    }
-    return d;
+    return *d->fd == key->fd ? d : d->other;
 }
 
 /** Lee bytes de un socket y los encola para ser escritos en otro socket */

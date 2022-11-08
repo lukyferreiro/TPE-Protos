@@ -8,9 +8,14 @@
 #include <errno.h>
 #include <string.h> // memset
 
+#include "logger.h"
 #include "request.h"
 #include <stdlib.h>
-#include "logger.h"
+
+#define IPV4_LEN 4
+#define IPV6_LEN 16
+#define PORT_LEN 2
+#define SOCKS5_REQUEST_LEN 6
 
 static void remaining_set(struct request_parser* p, const int n) {
     p->readBytes = 0;
@@ -46,20 +51,18 @@ static enum request_state rsv(const uint8_t c, struct request_parser* p) {
 
 static enum request_state atyp(const uint8_t c, struct request_parser* p) {
     enum request_state next;
-
     p->request->dest_addr_type = c;
+
     switch (p->request->dest_addr_type) {
         case SOCKS5_REQ_ADDRTYPE_IPV4:
-            remaining_set(p, 4); // Longitud de IPv4
-            memset(&(p->request->dest_addr.ipv4), 0,
-                   sizeof(p->request->dest_addr.ipv4));
+            remaining_set(p, IPV4_LEN); // Longitud de IPv4
+            memset(&(p->request->dest_addr.ipv4), 0, sizeof(p->request->dest_addr.ipv4));
             p->request->dest_addr.ipv4.sin_family = AF_INET;
             next = REQUEST_DSTADDR;
             break;
         case SOCKS5_REQ_ADDRTYPE_IPV6:
-            remaining_set(p, 16); // Longitud de IPv6
-            memset(&(p->request->dest_addr.ipv6), 0,
-                   sizeof(p->request->dest_addr.ipv6));
+            remaining_set(p, IPV6_LEN); // Longitud de IPv6
+            memset(&(p->request->dest_addr.ipv6), 0, sizeof(p->request->dest_addr.ipv6));
             p->request->dest_addr.ipv6.sin6_family = AF_INET6;
             next = REQUEST_DSTADDR;
             break;
@@ -85,7 +88,13 @@ static enum request_state dstaddr(const uint8_t c, struct request_parser* p) {
 
     switch (p->request->dest_addr_type) {
         case SOCKS5_REQ_ADDRTYPE_IPV4:
-            ((uint8_t*)&(p->request->dest_addr.ipv4.sin_addr))[p->readBytes++] = c;
+            //((uint8_t*)&(p->request->dest_addr.ipv4.sin_addr))[p->readBytes++] = c;
+            p->request->dest_addr.ipv4.sin_addr.s_addr = (p->request->dest_addr.ipv4.sin_addr.s_addr << 8) + c;
+            p->readBytes++;
+            // Cuando termino de leer la IP, le paso el puerto
+            if (remaining_is_done(p)) {
+                p->request->dest_addr.ipv4.sin_addr.s_addr = htonl(p->request->dest_addr.ipv4.sin_addr.s_addr);
+            }
             break;
         case SOCKS5_REQ_ADDRTYPE_IPV6:
             ((uint8_t*)&(p->request->dest_addr.ipv6.sin6_addr))[p->readBytes++] = c;
@@ -94,12 +103,12 @@ static enum request_state dstaddr(const uint8_t c, struct request_parser* p) {
             p->request->dest_addr.fqdn[p->readBytes++] = c;
             break;
         default:
-            // TODO ver si va algo
+            next = REQUEST_ERROR_UNSUPPORTED_ATYP;
             break;
     }
     // Cuando termino la lectura
     if (remaining_is_done(p)) {
-        remaining_set(p, 2); // Longiutyd del port
+        remaining_set(p, PORT_LEN); // Longiutyd del port
         p->request->dest_port = 0;
         next = REQUEST_DSTPORT;
     } else {
@@ -111,10 +120,8 @@ static enum request_state dstaddr(const uint8_t c, struct request_parser* p) {
 
 static enum request_state dstport(const uint8_t c, struct request_parser* p) {
     enum request_state next = REQUEST_DSTPORT;
-    ;
-    // *(((uint8_t*)&(p->request->dest_port)) + p->readBytes) = c;
-    // p->readBytes++;
-    ((uint8_t*)&(p->request->dest_port))[p->readBytes++] = c;
+    *(((uint8_t*)&(p->request->dest_port)) + p->readBytes) = c;
+    p->readBytes++;
     if (remaining_is_done(p)) {
         next = REQUEST_DONE;
     }
@@ -155,7 +162,7 @@ extern enum request_state request_parser_feed(struct request_parser* p, const ui
         case REQUEST_ERROR:
         case REQUEST_ERROR_UNSUPPORTED_VERSION:
         case REQUEST_ERROR_UNSUPPORTED_ATYP:
-            // next = p->state;
+            next = p->state;
             break;
         default:
             // next = REQUEST_ERROR;
@@ -167,7 +174,7 @@ extern enum request_state request_parser_feed(struct request_parser* p, const ui
 }
 
 extern enum request_state request_parser_consume(buffer* b, struct request_parser* p, bool* errored) {
-    /* enum request_state st = p->state;
+    enum request_state st = p->state;
     while (buffer_can_read(b)) {
         const uint8_t c = buffer_read(b);
         st = request_parser_feed(p, c);
@@ -175,63 +182,27 @@ extern enum request_state request_parser_consume(buffer* b, struct request_parse
             break;
         }
     }
-    return st; */
-
-    uint8_t byte;
-    while (!request_parser_is_done(p->state, errored) && buffer_can_read(b)) {
-        byte = buffer_read(b);
-        p->state = request_parser_feed(p, byte);
-    }
-    return request_parser_is_done(p->state, errored);
+    return st; 
 }
 
 extern bool request_parser_is_done(const enum request_state st, bool* errored) {
-    /* if (st >= REQUEST_ERROR && errored != 0) {
+    if (st >= REQUEST_ERROR && errored != 0) {
         *errored = true;
     }
-    return st >= REQUEST_DONE; */
-    
-    if (errored != NULL){
-        *errored = false;
-    }
-    switch (st) {
-
-    case REQUEST_DONE:
-        return true;
-        break;
-
-    case REQUEST_VERSION:
-    case REQUEST_CMD:
-    case REQUEST_RSV:
-    case REQUEST_ATYP:
-    case REQUEST_DSTADDR_FQDN:
-    case REQUEST_DSTADDR:
-    case REQUEST_DSTPORT:
-        return false;
-        break;
-    case REQUEST_ERROR_UNSUPPORTED_VERSION:
-    case REQUEST_ERROR_UNSUPPORTED_ATYP:
-    case REQUEST_ERROR:
-    default:
-        if (errored != NULL){
-            *errored = true;
-        }
-        return true;
-        break;
-    }
+    return st >= REQUEST_DONE; 
 }
 
 extern void request_parser_close(struct request_parser* p) {
     // Nada que hacer
 }
 
-int request_parser_marshall(buffer* b, const enum socks5_response_status status) {
-    size_t n;
-    uint8_t* buff = buffer_write_ptr(b, &n);
-    if (n < 10) {
+extern int request_parser_marshall(buffer *b, const enum socks5_response_status status) {
+    size_t  n;
+    uint8_t *buff = buffer_write_ptr(b, &n);
+    if(n < 10) {
         return -1;
     }
-    buff[0] = 0x05; // Vesion 5 del socks
+    buff[0] = 0x05;
     buff[1] = status;
     buff[2] = 0x00;
     buff[3] = SOCKS5_REQ_ADDRTYPE_IPV4;
@@ -269,14 +240,30 @@ enum socks5_response_status errno_to_socks(const int e) {
 }
 
 enum socks5_response_status cmd_resolve(struct request* request, struct sockaddr** originaddr,
-                                       socklen_t* originlen, int* domain) {
+                                        socklen_t* originlen, int* domain) {
     enum socks5_response_status ret = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
-
     *domain = AF_INET;
     struct sockaddr* addr = 0x00;
     socklen_t addrlen = 0;
 
     switch (request->dest_addr_type) {
+        // En caso de tener una IPv4
+        case SOCKS5_REQ_ADDRTYPE_IPV4: {
+            *domain = AF_INET;
+            addr = (struct sockaddr*)&(request->dest_addr.ipv4);
+            addrlen = sizeof(request->dest_addr.ipv4);
+            request->dest_addr.ipv4.sin_port = request->dest_port;
+            break;
+        }
+        // En caso de tener una IPv6
+        case SOCKS5_REQ_ADDRTYPE_IPV6: {
+            *domain = AF_INET6;
+            addr = (struct sockaddr*)&(request->dest_addr.ipv6);
+            addrlen = sizeof(request->dest_addr.ipv6);
+            request->dest_addr.ipv6.sin6_port = request->dest_port;
+            break;
+        }
+        // En caso de tener un FQDN
         case SOCKS5_REQ_ADDRTYPE_DOMAIN: {
             struct hostent* hp = gethostbyname(request->dest_addr.fqdn);
             if (hp == 0) {
@@ -286,18 +273,6 @@ enum socks5_response_status cmd_resolve(struct request* request, struct sockaddr
             request->dest_addr.ipv4.sin_family = hp->h_addrtype;
             memcpy((char*)&request->dest_addr.ipv4.sin_addr, *hp->h_addr_list, hp->h_length);
         }
-        case SOCKS5_REQ_ADDRTYPE_IPV4:
-            *domain = AF_INET;
-            addr = (struct sockaddr*)&(request->dest_addr.ipv4);
-            addrlen = sizeof(request->dest_addr.ipv4);
-            request->dest_addr.ipv4.sin_port = request->dest_port;
-            break;
-        case SOCKS5_REQ_ADDRTYPE_IPV6:
-            *domain = AF_INET6;
-            addr = (struct sockaddr*)&(request->dest_addr.ipv6);
-            addrlen = sizeof(request->dest_addr.ipv6);
-            request->dest_addr.ipv6.sin6_port = request->dest_port;
-            break;
         default:
             return SOCKS5_STATUS_ADDRESS_TYPE_NOT_SUPPORTED;
     }

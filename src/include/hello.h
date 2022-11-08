@@ -51,18 +51,14 @@ void hello_parser_init(struct hello_parser* p, void (*on_authentication_method)(
 enum hello_state hello_parser_feed(struct hello_parser* p, uint8_t b);
 
 /**
- * Por cada elemento del buffer llama a `hello_parser_feed' hasta que
+ * Por cada elemento del buffer llama a 'hello_parser_feed' hasta que
  * el parseo se encuentra completo o se requieren mas bytes.
- *
- * @param errored parametro de salida. si es diferente de NULL se deja dicho
- *   si el parsing se debió a una condición de error
  */
 enum hello_state hello_parser_consume(buffer* b, struct hello_parser* p, bool* errored);
 
 /**
- * Permite distinguir a quien usa hello_parser_feed si debe seguir
+ * Permite distinguir a quien usa 'hello_parser_feed' si debe seguir
  * enviando caracters o no.
- *
  * En caso de haber terminado permite tambien saber si se debe a un error
  */
 bool hello_parser_is_done(const enum hello_state state, bool* errored);
@@ -78,9 +74,7 @@ void hello_parser_close(struct hello_parser* p);
 
 /**
  * Serializa en buff la una respuesta al hello.
- *
- * Retorna la cantidad de bytes ocupados del buffer o -1 si no había
- * espacio suficiente.
+ * Retorna la cantidad de bytes ocupados del buffer o -1 si no habíaespacio suficiente.
  */
 int hello_parser_marshall(buffer* b, const uint8_t method);
 
