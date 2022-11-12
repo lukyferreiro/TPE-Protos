@@ -7,16 +7,14 @@
 
 int create_socket(struct socks5_args* args, addr_type addr_type) {
 
-    int new_socket;
     struct sockaddr_in addr;
     struct sockaddr_in6 addr_6;
-
     int ip_version = (addr_type == ADDR_IPV4) ? AF_INET : AF_INET6;
     int port = args->socks_port;
     char* address4 = args->socks_addr;
     char* address6 = args->socks_addr6;
+    int new_socket = socket(ip_version, SOCK_STREAM, IPPROTO_TCP);
 
-    new_socket = socket(ip_version, SOCK_STREAM, IPPROTO_TCP);
     if (new_socket < 0) {
         log(LOG_ERROR, "Cannot create socket");
         return -1;
@@ -33,12 +31,13 @@ int create_socket(struct socks5_args* args, addr_type addr_type) {
     }
 
     log(INFO, "Listening on TCP port %d", port);
+
     if (addr_type == ADDR_IPV4) {
         memset(&addr, 0, sizeof(addr));
         addr.sin_family = AF_INET;
         addr.sin_port = htons(port);
         if (inet_pton(AF_INET, address4, &addr.sin_addr.s_addr) <= 0) {
-            log(DEBUG, "Cannot translate to IPv4 the address %s ", address4);
+            log(DEBUG, "Cannot translate to IPv4 the address %s", address4);
             close(new_socket);
             return -1;
         }
