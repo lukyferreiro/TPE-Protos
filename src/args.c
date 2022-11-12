@@ -10,6 +10,8 @@
 
 #include "args.h"
 
+struct socks5_args socks5_args;
+
 static unsigned short port(const char* s) {
     char* end = 0;
     const long sl = strtol(s, &end, 10);
@@ -23,7 +25,7 @@ static unsigned short port(const char* s) {
 }
 
 static void user(char* s, struct users* user) {
-    char* p = strchr(s, ':');
+    char* p = strchr(s, USER_PASSWORD_DELIMETER);
     if (p == NULL) {
         fprintf(stderr, "Password not found\n");
         exit(1);

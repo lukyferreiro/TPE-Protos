@@ -5,6 +5,12 @@
 
 #include "buffer.h"
 
+typedef enum addr_type {
+    ADDR_IPV4,
+    ADDR_IPV6,
+    ADDR_DOMAIN,
+} addr_type;
+
 #define SOCKADDR_TO_HUMAN_MIN (INET6_ADDRSTRLEN + 5 + 1)
 
 /**
