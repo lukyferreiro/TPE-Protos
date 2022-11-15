@@ -79,7 +79,7 @@ typedef struct alpha_req {
     unsigned command;
     uint16_t req_id;
     uint32_t token;
-    alpha_data data;
+    current_alpha_data data;
 } alpha_req;
 
 typedef struct alpha_res {
@@ -87,8 +87,7 @@ typedef struct alpha_res {
     alpha_status_code status;
     unsigned command;
     uint16_t res_id;
-    uint32_t token;
-    alpha_data data;
+    current_alpha_data data;
 } alpha_res;
 
 //Metodos que nos dirán el tipo de dato a devolver segun el comando que se le pase
