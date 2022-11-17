@@ -48,7 +48,6 @@ typedef enum alpha_status_code {
     SC_OK,
     SC_INVALID_VERSION,
     SC_BAD_CREDENTIALS,
-    SC_INVALID_TYPE,
     SC_INVALID_COMMAND,
     SC_INVALID_ARGUMENT,
     SC_SERVER_IS_FULL,
