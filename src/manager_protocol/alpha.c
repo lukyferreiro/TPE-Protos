@@ -25,8 +25,10 @@ alpha_data cmd_to_req_data_type(unsigned alpha_cmd){
         case GET_IS_AUTH_ENABLED:
         case GET_USER_PAGE_SIZE:
         case POST_ADD_USER:
-        case POST_TOGGLE_SNIFF:
-        case POST_TOGGLE_AUTH:
+        case POST_ENABLE_SNIFF:
+        case POST_DISABLE_SNIFF:
+        case POST_ENABLE_AUTH:
+        case POST_DISABLE_AUTH:
         default:
             return EMPTY_DATA;
         }
@@ -48,8 +50,10 @@ alpha_data cmd_to_res_data_type(unsigned alpha_cmd){
             return UINT_8_DATA;
         case POST_ADD_USER:
         case POST_DEL_USER:
-        case POST_TOGGLE_SNIFF:
-        case POST_TOGGLE_AUTH:
+        case POST_ENABLE_SNIFF:
+        case POST_DISABLE_SNIFF:
+        case POST_ENABLE_AUTH:
+        case POST_DISABLE_AUTH:
         case POST_USER_PAGE_SIZE:
     default:
         return EMPTY_DATA;

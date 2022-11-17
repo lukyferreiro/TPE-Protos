@@ -21,19 +21,33 @@ typedef void (*res_handler_fun)(alpha_res *, alpha_req);
 static void set_response_header(struct alpha_req alpha_req,
                               struct alpha_res *alpha_res);
 
+extern struct socks5_args socks5_args;
 
-static void get_list_handler(alpha_res*, alpha_req);
-static void get_hist_conn_handler(alpha_res*, alpha_req);
-static void get_conc_conn_handler(alpha_res*, alpha_req);
-static void get_bytes_transf_handler(alpha_res*, alpha_req);
-static void get_is_sniff_handler(alpha_res*, alpha_req);
-static void get_is_auth_handler(alpha_res*, alpha_req);
-static void get_user_page_size_handler(alpha_res*, alpha_req);
-static void post_add_user_handler(alpha_res*, alpha_req);
-static void post_del_user_handler(alpha_res*, alpha_req);
-static void post_toggle_sniff_handler(alpha_res*, alpha_req);
-static void post_toggle_auth_handler(alpha_res*, alpha_req);
-static void post_user_page_size_handler(alpha_res*, alpha_req);
+//done
+static void get_list_handler(alpha_res* alpha_res, alpha_req alpha_req);
+static void get_hist_conn_handler(alpha_res* alpha_res, alpha_req alpha_req);
+static void get_conc_conn_handler(alpha_res* alpha_res, alpha_req alpha_req);
+static void get_bytes_transf_handler(alpha_res* alpha_res, alpha_req alpha_req);
+//done
+static void get_is_sniff_handler(alpha_res* alpha_res, alpha_req alpha_req);
+//done
+static void get_is_auth_handler(alpha_res* alpha_res, alpha_req alpha_req);
+//done 
+static void get_user_page_size_handler(alpha_res* alpha_res, alpha_req alpha_req);
+//done
+static void post_add_user_handler(alpha_res* alpha_res, alpha_req alpha_req);
+//done
+static void post_del_user_handler(alpha_res* alpha_res, alpha_req alpha_req);
+//done
+static void post_enable_sniff_handler(alpha_res* alpha_res, alpha_req alpha_req);
+//done
+static void post_disable_sniff_handler(alpha_res* alpha_res, alpha_req alpha_req);
+//done
+static void post_enable_auth_handler(alpha_res* alpha_res, alpha_req alpha_req);
+//done
+static void post_disable_auth_handler(alpha_res* alpha_res, alpha_req alpha_req);
+//done
+static void post_user_page_size_handler(alpha_res* alpha_res, alpha_req alpha_req);
 
 
 res_handler_fun function_handlers[] = {
@@ -41,8 +55,9 @@ res_handler_fun function_handlers[] = {
     get_conc_conn_handler,   get_bytes_transf_handler,
     get_is_sniff_handler, get_is_auth_handler,
     get_user_page_size_handler, post_add_user_handler,        
-    post_del_user_handler, post_toggle_sniff_handler, 
-    post_toggle_auth_handler, post_user_page_size_handler,
+    post_del_user_handler, post_enable_sniff_handler, 
+    post_disable_sniff_handler, post_enable_auth_handler,
+    post_disable_auth_handler, post_user_page_size_handler
 };
 
 struct alpha_manager {
@@ -157,4 +172,90 @@ static void set_response_header(struct alpha_req alpha_req,
     alpha_res->alpha_version = alpha_req.alpha_version;
     alpha_res->res_id = alpha_req.req_id;
     alpha_res->command = alpha_req.command;
+}
+
+static void get_list_handler(alpha_res* alpha_res, alpha_req alpha_req){
+    int offset = (alpha_req.data.alpha_uint8 - 1) * alpha_manager.page_size;
+    if (offset > socks5_args.nusers) {
+        alpha_res->data.string[0] = 0;
+        return;
+    }
+    int aux_offset = offset;
+    int string_offset = 0;
+
+    //Salteo los campos que pueden llegar a estar vacíos
+    //cuando elimino usuarios no dejo todos juntos en el array
+    for (int i = 0; i < aux_offset; i++) {
+        if (socks5_args.users[i].name[0] == '\0')
+            offset++;
+    }
+    for (int i = offset, j = 0; i < MAX_USERS && j < alpha_manager.page_size;
+         i++) {
+        if (socks5_args.users[i].name[0] != '\0') {
+            strcpy(alpha_res->data.string + string_offset, socks5_args.users[i].name);
+            string_offset += strlen(socks5_args.users[i].name);
+            *(alpha_res->data.string + string_offset++) = '\n';
+            j++;
+        }
+    }
+    *(alpha_res->data.string + --string_offset) = '\0';
+}
+
+static void get_is_sniff_handler(alpha_res* alpha_res, alpha_req alpha_req){
+    alpha_res->data.alpha_uint8=socks5_args.sniffing;
+}
+
+static void get_is_auth_handler(alpha_res* alpha_res, alpha_req alpha_req){
+    alpha_res->data.alpha_uint8=socks5_args.auth;
+}
+
+static void get_user_page_size_handler(alpha_res* alpha_res, alpha_req alpha_req){
+    alpha_res->data.alpha_uint8=alpha_manager.page_size;
+}
+
+static void post_add_user_handler(alpha_res* alpha_res, alpha_req alpha_req){
+    char *username = alpha_req.data.string;
+    char *password;
+    password = strchr(username, USER_PASSWORD_DELIMETER);
+    *password++ = 0;//agrego el 0 final a la password
+    if (!server_is_full()) {
+        if (!user_is_registered(username)) {
+            add_user(username, password);
+            alpha_res->status = SC_OK;
+        } else {
+            alpha_res->status = SC_INVALID_USER_IS_REGISTERED;
+        }
+    } else {
+        alpha_res->status = SC_SERVER_IS_FULL;
+    }
+}
+
+static void post_del_user_handler(alpha_res* alpha_res, alpha_req alpha_req){
+    char *username = alpha_req.data.string;
+    if (user_is_registered(username)) {
+        delete_user(username);
+        alpha_res->status = SC_OK;
+    } else {
+        alpha_res->status = SC_USER_NOT_FOUND;
+    }
+}
+
+static void post_enable_sniff_handler(alpha_res* alpha_res, alpha_req alpha_req){
+    socks5_args.sniffing = true;
+}
+
+static void post_disable_sniff_handler(alpha_res* alpha_res, alpha_req alpha_req){
+    socks5_args.sniffing = false;
+}
+
+static void post_enable_auth_handler(alpha_res* alpha_res, alpha_req alpha_req){
+    socks5_args.auth = true;
+}
+
+static void post_disable_auth_handler(alpha_res* alpha_res, alpha_req alpha_req){
+    socks5_args.auth = false;
+}
+
+static void post_user_page_size_handler(alpha_res* alpha_res, alpha_req alpha_req){
+    alpha_manager.page_size = alpha_req.data.alpha_uint8;
 }

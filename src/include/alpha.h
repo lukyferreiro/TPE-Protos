@@ -23,7 +23,7 @@ typedef enum alpha_packet_type {
     ALPHA_RESPONSE
 } alpha_packet_type;
 
-#define COMMANDS_SIZE 12
+#define COMMANDS_SIZE 14
 typedef enum alpha_commands {
     GET_LIST,
     GET_HIST_CONN,
@@ -34,8 +34,10 @@ typedef enum alpha_commands {
     GET_USER_PAGE_SIZE,
     POST_ADD_USER,
     POST_DEL_USER,
-    POST_TOGGLE_SNIFF,
-    POST_TOGGLE_AUTH,
+    POST_ENABLE_SNIFF,
+    POST_DISABLE_SNIFF,
+    POST_ENABLE_AUTH,
+    POST_DISABLE_AUTH,
     POST_USER_PAGE_SIZE
 } alpha_commands;
 

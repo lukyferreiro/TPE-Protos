@@ -2,6 +2,7 @@
 #include "alpha.h"
 #include "logger.h"
 #include "netutils.h"
+#include "user_utils.h"
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netinet/in.h>
@@ -21,8 +22,7 @@
 void help();
 static bool header_builder_with_param(struct alpha_req *alpha_req, unsigned cmd, char* param);
 static bool header_builder_no_param(struct alpha_req *alpha_req, unsigned cmd);
-void response_handler(struct alpha_req alpha_req,
-                      struct alpha_res alpha_res, char *message);
+void response_handler(struct alpha_req alpha_req, struct alpha_res alpha_res, char *message);
 
 /* comandos para implementacion tipo shell */
 typedef struct alpha_shell_command {
@@ -127,10 +127,8 @@ int main(int argc, const char *argv[]) {
 
     char *token_env = getenv("ALPHA_TOKEN");
     if (token_env == NULL || strlen(token_env) != 4) {
-        fprintf(stderr, "Alpha client: ERROR, erroneous or unexistent ALPHA_TOKEN "
-                        "env variable.\n");
-        fprintf(stderr,
-                "The token name must be ALPHA_TOKEN and its value 4 bytes\n");
+        fprintf(stderr, "Alpha client: ERROR, erroneous or unexistent ALPHA_TOKEN env variable.\n");
+        fprintf(stderr, "The token name must be ALPHA_TOKEN and its value 4 bytes\n");
         exit(EXIT_FAILURE);
     }
     //convierto el token a int 
@@ -180,12 +178,10 @@ int main(int argc, const char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    //loop principal de la
     while (!done) {
         command = param = NULL;
         printf("alpha manager client >> ");
 
-        //mirar tp3 de so
         memset(user_input, 0, USER_INPUT_SIZE);
         fgets(user_input, USER_INPUT_SIZE, stdin);
 
@@ -194,7 +190,6 @@ int main(int argc, const char *argv[]) {
             continue;
         }
 
-        //parseo lo que envía el user
         user_input[strcspn(user_input, "\r\n")] = 0;
         command = user_input;
         param = strchr(user_input, ' ');
@@ -202,13 +197,11 @@ int main(int argc, const char *argv[]) {
             *param++ = 0;
         }
 
-        //si es help, corro help y no ejecuto el resto
         if (strcmp(command, "help") == 0) {
             help();
             continue;
         }
 
-        //si no era help, comparo con los otros comandos y veo si el comando es o no válido
         for (i_command = 0; i_command < MAX_COMMANDS; i_command++) {
             if (strcmp(command, alpha_shell_commands[i_command].name) == 0) {
                 if(alpha_shell_commands[i_command].nparams==0){
@@ -340,4 +333,38 @@ static bool header_builder_with_param(struct alpha_req *alpha_req, unsigned cmd,
     }
 
     return header_builder_no_param(alpha_req, cmd);
+}
+
+void response_handler(struct alpha_req alpha_req, struct alpha_res alpha_res, char *message) {
+    if (alpha_req.req_id != alpha_res.res_id) {
+        printf("Error: response id != request id.\n");
+        return;
+    }
+
+    if (alpha_res.status != SC_OK) {
+        printf("Error: %s.\n", alpha_error_report(alpha_res.status));
+        return;
+    }
+
+    switch (cmd_to_res_data_type(alpha_res.command)) {
+        case UINT_8_DATA:
+            printf("%s: %d", message, alpha_res.data.alpha_uint8);
+            break;
+        case UINT_16_DATA:
+            printf("%s: %d", message,  alpha_res.data.alpha_uint16);
+            break;
+        case UINT_32_DATA:
+            printf("%s: %u", message, alpha_res.data.alpha_uint32);
+            break;
+        case STRING_DATA:
+            printf("%s:\n%s", message, alpha_res.data.string);
+            break;
+        case EMPTY_DATA:
+            printf("done\n");
+            break;
+        default:
+            printf("%s", message);
+            break;
+    }
+    printf("\n");
 }

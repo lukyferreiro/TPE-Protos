@@ -1,6 +1,5 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
-
 #include <errno.h>
 #include <getopt.h>
 #include <limits.h> /* LONG_MIN et al */
@@ -9,6 +8,7 @@
 #include <string.h> /* memset */
 
 #include "args.h"
+#include "user_utils.h"
 
 struct socks5_args socks5_args;
 
@@ -74,7 +74,8 @@ void parse_args(const int argc, char** argv, struct socks5_args* args) {
     args->version = DEFAULT_VERSION;
     args->nusers = 0;
 
-    args->disectors_enabled = true;
+    args->sniffing = true;
+    args->auth = false;
 
     int c;
     while (true) {
@@ -101,7 +102,7 @@ void parse_args(const int argc, char** argv, struct socks5_args* args) {
                     args->mng_addr = optarg;
                 break;
             case 'N':
-                args->disectors_enabled = false;
+                args->sniffing = false;
                 break;
             case 'p':
                 args->socks_port = port(optarg);
@@ -116,6 +117,7 @@ void parse_args(const int argc, char** argv, struct socks5_args* args) {
                 } else {
                     user(optarg, args->users + args->nusers);
                     args->nusers++;
+                    args->auth = true;
                 }
                 break;
             case 'v':

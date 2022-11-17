@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 #define MAX_USERS 10
+#define MAX_CRED_SIZE 255
 #define USER_PASSWORD_DELIMETER ':'
 
 #define DEFAULT_IPV4_ADDR_PROXY "0.0.0.0"
@@ -33,7 +34,9 @@ struct socks5_args {
     int nusers;
     struct users users[MAX_USERS];
 
-    bool disectors_enabled;
+    uint32_t        manager_token;
+    bool            sniffing;
+    bool            auth;
 };
 
 /**
