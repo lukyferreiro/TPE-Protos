@@ -21,11 +21,11 @@ alpha_data cmd_to_req_data_type(unsigned alpha_cmd){
         case GET_HIST_CONN:
         case GET_CONC_CONN:
         case GET_BYTES_TRANSF:
-        case GET_IS_SNIFFING_ENABLED:
+        case GET_IS_SNIFF_ENABLED:
         case GET_IS_AUTH_ENABLED:
         case GET_USER_PAGE_SIZE:
         case POST_ADD_USER:
-        case POST_TOGGLE_SNIFFING:
+        case POST_TOGGLE_SNIFF:
         case POST_TOGGLE_AUTH:
         default:
             return EMPTY_DATA;
@@ -42,13 +42,13 @@ alpha_data cmd_to_res_data_type(unsigned alpha_cmd){
             return UINT_32_DATA;
         case GET_CONC_CONN:
             return UINT_16_DATA;
-        case GET_IS_SNIFFING_ENABLED:
+        case GET_IS_SNIFF_ENABLED:
         case GET_IS_AUTH_ENABLED:
         case GET_USER_PAGE_SIZE:
             return UINT_8_DATA;
         case POST_ADD_USER:
         case POST_DEL_USER:
-        case POST_TOGGLE_SNIFFING:
+        case POST_TOGGLE_SNIFF:
         case POST_TOGGLE_AUTH:
         case POST_USER_PAGE_SIZE:
     default:

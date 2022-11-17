@@ -1,6 +1,3 @@
-/**
- * dog_manager.c  - administrador de servidor SOCKSv5
- */
 #include "alpha_manager.h"
 #include "args.h"
 #include "buffer.h"
@@ -19,10 +16,34 @@
 #define BUFFER_SIZE 4096
 #define DEFAULT_PAGE_SIZE 200
 #define N(x) (sizeof(x) / sizeof((x)[0]))
-typedef void (*resp_handler_fun)(alpha_res *, alpha_req);
+typedef void (*res_handler_fun)(alpha_res *, alpha_req);
 
 static void set_response_header(struct alpha_req alpha_req,
                               struct alpha_res *alpha_res);
+
+
+static void get_list_handler(alpha_res*, alpha_req);
+static void get_hist_conn_handler(alpha_res*, alpha_req);
+static void get_conc_conn_handler(alpha_res*, alpha_req);
+static void get_bytes_transf_handler(alpha_res*, alpha_req);
+static void get_is_sniff_handler(alpha_res*, alpha_req);
+static void get_is_auth_handler(alpha_res*, alpha_req);
+static void get_user_page_size_handler(alpha_res*, alpha_req);
+static void post_add_user_handler(alpha_res*, alpha_req);
+static void post_del_user_handler(alpha_res*, alpha_req);
+static void post_toggle_sniff_handler(alpha_res*, alpha_req);
+static void post_toggle_auth_handler(alpha_res*, alpha_req);
+static void post_user_page_size_handler(alpha_res*, alpha_req);
+
+
+res_handler_fun function_handlers[] = {
+    get_list_handler,        get_hist_conn_handler,
+    get_conc_conn_handler,   get_bytes_transf_handler,
+    get_is_sniff_handler, get_is_auth_handler,
+    get_user_page_size_handler, post_add_user_handler,        
+    post_del_user_handler, post_toggle_sniff_handler, 
+    post_toggle_auth_handler, post_user_page_size_handler,
+};
 
 struct alpha_manager {
     struct alpha_req alpha_req;
@@ -69,7 +90,7 @@ void manager_receive(struct selector_key *key) {
 
     if (alpha_manager.alpha_res.status == SC_OK) {
      //arreglo de punteros a función que guardaran el resultado debidamente en response para cada comando
-//        function_handlers[alpha_manager.alpha_req.command](&alpha_manager.alpha_res, alpha_manager.alpha_req);
+        function_handlers[alpha_manager.alpha_req.command](&alpha_manager.alpha_res, alpha_manager.alpha_req);
     }
 
     if (alpha_res_to_packet(alpha_manager.buffer_write,
