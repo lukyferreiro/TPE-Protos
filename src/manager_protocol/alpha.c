@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int get_packet_size(alpha_packet_type alpha_packet_type, unsigned alpha_cmd, char *data)
+static int get_packet_size(alpha_packet_type alpha_packet_type, unsigned alpha_cmd, char *data);
 
 static void read_data(current_alpha_data *output, alpha_data alpha_data, char *input);
 
@@ -13,90 +13,67 @@ static void alpha_data_to_buffer(current_alpha_data input, alpha_data alpha_data
 //Tipo de dato a devolver segun el comando y tipo de response
 alpha_data cmd_to_req_data_type(unsigned alpha_cmd){
     switch (alpha_cmd) {
-        case GET_CMD_LIST:
-            return STRING_DATA;
-
-        case GET_CMD_HIST_CONN:
-
-        case GET_CMD_BYTES_TRANSF:
-            return UINT_32_DATA;
-
-        case GET_CMD_CONC_CONN:
-            return UINT_16_DATA;
-
-        case GET_CMD_IS_SNIFFING_ENABLED:
-
-        case GET_CMD_IS_AUTH_ENABLED:
-
-        case GET_CMD_USER_PAGE_SIZE:
+        case GET_LIST:
+        case POST_USER_PAGE_SIZE:
             return UINT_8_DATA;
-
-        case POST_CMD_ADD_USER:
-
-        case POST_CMD_DEL_USER:
-
-        case POST_CMD_TOGGLE_SNIFFING:
-
-        case POST_CMD_TOGGLE_AUTH:
-
+        case POST_DEL_USER:
+            return STRING_DATA;
+        case GET_HIST_CONN:
+        case GET_CONC_CONN:
+        case GET_BYTES_TRANSF:
+        case GET_IS_SNIFFING_ENABLED:
+        case GET_IS_AUTH_ENABLED:
+        case GET_USER_PAGE_SIZE:
+        case POST_ADD_USER:
+        case POST_TOGGLE_SNIFFING:
+        case POST_TOGGLE_AUTH:
         default:
-
             return EMPTY_DATA;
         }
 }
 
 //Tipo de dato a devolver segun el comando y tipo de response
-alpha_data cmd_to_res_data_type(unsigned alpha_cmd);{
+alpha_data cmd_to_res_data_type(unsigned alpha_cmd){
     switch (alpha_cmd) {
-        case GET_CMD_LIST:
+        case GET_LIST:
             return STRING_DATA;
-            
-        case GET_CMD_HIST_CONN:
-        
-        case GET_CMD_BYTES_TRANSF:
+        case GET_HIST_CONN:
+        case GET_BYTES_TRANSF:
             return UINT_32_DATA;
-
-        case GET_CMD_CONC_CONN:
+        case GET_CONC_CONN:
             return UINT_16_DATA;
-
-        case GET_CMD_IS_SNIFFING_ENABLED:
-
-        case GET_CMD_IS_AUTH_ENABLED:
-
-        case GET_CMD_USER_PAGE_SIZE:
+        case GET_IS_SNIFFING_ENABLED:
+        case GET_IS_AUTH_ENABLED:
+        case GET_USER_PAGE_SIZE:
             return UINT_8_DATA;
-
-        case POST_CMD_ADD_USER:
-
-        case POST_CMD_DEL_USER:
-
-        case POST_CMD_TOGGLE_SNIFFING:
-
-        case POST_CMD_TOGGLE_AUTH:
+        case POST_ADD_USER:
+        case POST_DEL_USER:
+        case POST_TOGGLE_SNIFFING:
+        case POST_TOGGLE_AUTH:
+        case POST_USER_PAGE_SIZE:
     default:
         return EMPTY_DATA;
     }
 }
 
 int udp_to_alpha_req(char *raw_buffer, struct alpha_req* request) {
-    if (raw == NULL || request == NULL) {
+    if (raw_buffer == NULL || request == NULL) {
         return -1;
     }
-
     
-    request->alpha_version = *((uint8_t *)raw);
+    request->alpha_version = *((uint8_t *)raw_buffer);
     raw_buffer += sizeof(uint8_t);
 
    
-    request->current_alpha_cmd = ntohs(*((uint16_t *)raw));
+    request->command = ntohs(*((uint16_t *)raw_buffer));
     raw_buffer += sizeof(uint16_t);
 
     
-    request->req_id = ntohs(*((uint16_t *)raw));
+    request->req_id = ntohs(*((uint16_t *)raw_buffer));
     raw_buffer += sizeof(uint16_t);
 
     /*  token */
-    request->token = ntohl(*((uint32_t *)raw));
+    request->token = ntohl(*((uint32_t *)raw_buffer));
     raw_buffer += sizeof(uint32_t);
 
     //Guardo en la struct el buffer
@@ -114,18 +91,18 @@ int udp_to_alpha_res(char *raw, alpha_res *response){
     response->alpha_version = *((uint8_t *)raw);
     raw += sizeof(uint8_t);
 
-    response->alpha_status_code = *((uint8_t *)raw);
+    response->status = *((uint8_t *)raw);
     raw += sizeof(uint8_t);
 
 
     response->command = ntohs(*((uint16_t *)raw));
     raw += sizeof(uint16_t);
 
-    response->req_id = ntohs(*((uint16_t *)raw));
+    response->res_id = ntohs(*((uint16_t *)raw));
     raw += sizeof(uint16_t);
 
-    if (response->alpha_status_code == SC_OK)
-        read_data(&response->current_alpha_data, cmd_to_resp_data_type(response->command), raw);
+    if (response->status == SC_OK)
+        read_data(&response->data, cmd_to_resp_data_type(response->command), raw);
 
     return 0;
 }
@@ -210,7 +187,7 @@ int alpha_res_to_packet(char* output, struct alpha_res * input, int* size){
     memcpy(buffer_p, &aux, sizeof(uint16_t));
     buffer_p += sizeof(uint16_t);
 
-    aux = htons(input->req_id);
+    aux = htons(input->res_id);
     memcpy(buffer_p, &aux, sizeof(uint16_t));
     buffer_p += sizeof(uint16_t);
 

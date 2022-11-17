@@ -9,9 +9,9 @@
 
 //size of things to use by the moment
 #define MAX_DATAGRAM_SIZE 65507    // espacio disponible descontando el header UDP segun wikipedia, bastante mas de lo que necesitamos creo
-#define ALPHA_REQUEST_HEADER_SIZE //to be determined
-#define ALPHA_RESPONSE_HEADER    // to be determined
-#define ALPHA_REQUEST_ID_SIZE 
+#define ALPHA_REQUEST_HEADER_SIZE 9//to be determined
+#define ALPHA_RESPONSE_HEADER_SIZE 6// to be determined
+#define ALPHA_REQUEST_ID_SIZE 2
 #define ERROR -1
 #define OK 0
 #define MAX_PAGE_SIZE 200 // cantidad de usuarios es lo unico que no entraria en un unico datagrama ,
