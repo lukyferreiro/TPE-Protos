@@ -13,10 +13,7 @@
 #include <sys/types.h>  // socket
 #include <unistd.h>
 
-typedef enum { DEBUG = 0,
-               INFO,
-               LOG_ERROR,
-               FATAL } LOG_LEVEL;
+typedef enum { DEBUG = 0, INFO, LOG_ERROR, FATAL } LOG_LEVEL;
 
 extern LOG_LEVEL current_level;
 
@@ -26,6 +23,7 @@ extern LOG_LEVEL current_level;
 */
 void setLogLevel(LOG_LEVEL newLevel);
 char* levelDescription(LOG_LEVEL level);
+void log(LOG_LEVEL level, const char* fmt, ...);
 
 // Debe ser una macro para poder obtener nombre y linea de archivo.
 #define log(level, fmt, ...)                                                             \
@@ -39,4 +37,4 @@ char* levelDescription(LOG_LEVEL level);
             exit(1);                                                                     \
     }
 
-#endif
+#endif 

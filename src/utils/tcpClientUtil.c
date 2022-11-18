@@ -21,7 +21,7 @@ int tcpClientSocket(const char *host, const char *service) {
 	struct addrinfo *servAddr; // Holder for returned list of server addrs
 	int rtnVal = getaddrinfo(host, service, &addrCriteria, &servAddr);
 	if (rtnVal != 0) {
-		log(LOG_ERROR, "getaddrinfo() failed %s", gai_strerror(rtnVal))
+		log(LOG_ERROR, "getaddrinfo() failed %s", gai_strerror(rtnVal));
 		return -1;
 	}
 
@@ -33,12 +33,12 @@ int tcpClientSocket(const char *host, const char *service) {
 			errno = 0;
 			// Establish the connection to the server
 			if ( connect(sock, addr->ai_addr, addr->ai_addrlen) != 0) {
-				log(INFO, "can't connectto %s: %s", printAddressPort(addr, addrBuffer), strerror(errno))
+				log(INFO, "can't connectto %s: %s", printAddressPort(addr, addrBuffer), strerror(errno));
 				close(sock); 	// Socket connection failed; try next address
 				sock = -1;
 			}
 		} else {
-			log(DEBUG, "Can't create client socket on %s",printAddressPort(addr, addrBuffer)) 
+			log(DEBUG, "Can't create client socket on %s",printAddressPort(addr, addrBuffer)); 
 		}
 	}
 

@@ -64,10 +64,7 @@ struct selector_init {
 
 /**
  * Intereses sobre un file descriptor (quiero leer, quiero escribir, …)
- *
- * Son potencias de 2, por lo que se puede requerir una conjunción usando el OR
- * de bits.
- *
+ * Son potencias de 2, por lo que se puede requerir una conjunción usando el OR de bits.
  * OP_NOOP es útil para cuando no se tiene ningún interés.
  */
 typedef enum {

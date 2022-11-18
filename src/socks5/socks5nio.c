@@ -152,7 +152,7 @@ struct request_st {
     struct request request;
     struct request_parser parser;
 
-    enum socks5_response_status status; // El resumen de la respuesta a enviar
+    enum socks5_response_status status; // Resumen de la respuesta a enviar
 
     /** A donde nos tenemos que conectar ? */
     struct sockaddr_storage* origin_addr;
@@ -411,6 +411,12 @@ void socksv5_pool_destroy(void) {
     struct socks5 *next, *s;
     for (s = pool; s != NULL; s = next) {
         next = s->next;
+        log(DEBUG, "Socks5 pool destroy");
+        if (s->origin_resolution != NULL) {
+            free(s->origin_resolution);
+        }
+        close(s->origin_fd);
+        close(s->client_fd);
         free(s);
     }
 }
@@ -457,6 +463,7 @@ static void socksv5_done(struct selector_key* key) {
             close(fds[i]);
         }
     }
+    log(DEBUG, "Connection closed");
 }
 
 void socksv5_passive_accept(struct selector_key* key) {
@@ -535,14 +542,10 @@ static unsigned hello_read(struct selector_key* key) {
     // Leo bytes del socket y los dejo en el buffer
     size_t count;
     uint8_t* ptr = buffer_write_ptr(d->rb, &count);
-    ;
     ssize_t n = recv(key->fd, ptr, count, 0);
-    ;
 
     if (n > 0) {
         buffer_write_adv(d->rb, n);
-        /* const enum hello_state st = hello_parser_consume(d->rb, &d->parser, &error);
-        if (hello_parser_is_done(st, 0)) { */
         if (hello_parser_consume(d->rb, &d->parser, &error)) {
             if (selector_set_interest_key(key, OP_WRITE) == SELECTOR_SUCCESS) {
                 ret = hello_process(d);
@@ -743,6 +746,8 @@ static unsigned request_connect_to_origin(struct selector_key* key, struct reque
     enum socks5_response_status status = d->status;
     int* fd = d->origin_fd;
     bool error = false;
+
+    //Para los logs
     char* tmp = (char*)malloc(INET_ADDRSTRLEN * sizeof(char));
     char* addr = inet_ntop(AF_INET, &d->request.dest_addr.ipv4.sin_addr, tmp, INET_ADDRSTRLEN);
 
@@ -805,8 +810,7 @@ static unsigned request_read(struct selector_key* key) {
 
     if (n > 0) {
         buffer_write_adv(b, n);
-        int st = request_parser_consume(b, &d->parser, &error);
-        if (request_parser_is_done(st, 0)) { 
+        if (request_parser_consume(b, &d->parser, &error)) {
             ret = request_process(key, d);
         }
     } else {
@@ -866,7 +870,7 @@ static unsigned request_connecting(struct selector_key* key) {
             *d->status = errno_to_socks(error);
         }
     }
-     if (request_parser_marshall(d->wb, *d->status) == -1) { 
+    if (request_parser_marshall(d->wb, *d->status) == -1) {
         *d->status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
         abort(); // El buffer tiene que ser mas grande en la variable
     }
@@ -878,7 +882,7 @@ static unsigned request_connecting(struct selector_key* key) {
     return SELECTOR_SUCCESS == s ? REQUEST_WRITE : ERROR;
 }
 
-/** Escribre todos los bytes de la respuesta al mensaje 'request' */
+/** Escribe todos los bytes de la respuesta al mensaje 'request' */
 static unsigned request_write(struct selector_key* key) {
     struct socks5* s = ATTACHMENT(key);
     struct request_st* d = &s->client.request;
@@ -907,8 +911,6 @@ static unsigned request_write(struct selector_key* key) {
             }
         }
     }
-
-    // log_request(d->status, (const struct sockaddr*)&s->client_addr, (const struct sockaddr*)&s->origin_addr);
 
     return ret;
 }

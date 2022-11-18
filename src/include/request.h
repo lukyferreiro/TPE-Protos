@@ -100,7 +100,7 @@ enum socks5_response_status {
 void request_parser_init(struct request_parser* p);
 
 /** Entrega un byte al parser. Retorna true si se llego al final  */
-enum request_state request_parser_feed(struct request_parser* p, const uint8_t c);
+enum request_state request_parser_feed(struct request_parser* p, const uint8_t b);
 
 /**
  * Por cada elemento del buffer llama a 'request_parser_feed' hasta que
@@ -113,7 +113,13 @@ enum request_state request_parser_consume(buffer* b, struct request_parser* p, b
  * enviando caracters o no.
  * En caso de haber terminado permite tambien saber si se debe a un error
  */
-bool request_parser_is_done(const enum request_state st, bool* errored);
+bool request_parser_is_done(enum request_state st, bool* errored);
+
+/**
+ * En caso de que se haya llegado a un estado de error, permite obtener una
+ * representación textual que describe el problema
+ */
+char* request_parser_error(struct request_parser* p);
 
 void request_parser_close(struct request_parser* p);
 

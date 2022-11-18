@@ -16,6 +16,7 @@
 #define IPV6_LEN 16
 #define PORT_LEN 2
 #define SOCKS5_REQUEST_LEN 6
+#define SOCKS5_VERSION 0x05
 
 static void remaining_set(struct request_parser* p, const int n) {
     p->readBytes = 0;
@@ -29,7 +30,7 @@ static int remaining_is_done(struct request_parser* p) {
 static enum request_state version(const uint8_t c, struct request_parser* p) {
     enum request_state next;
     switch (c) {
-        case 0x05: // Version 5 de socks
+        case SOCKS5_VERSION: // Version 5 de socks
             next = REQUEST_CMD;
             break;
         default:
@@ -108,7 +109,7 @@ static enum request_state dstaddr(const uint8_t c, struct request_parser* p) {
     }
     // Cuando termino la lectura
     if (remaining_is_done(p)) {
-        remaining_set(p, PORT_LEN); // Longiutyd del port
+        remaining_set(p, PORT_LEN); // Longitud del port
         p->request->dest_port = 0;
         next = REQUEST_DSTPORT;
     } else {
@@ -128,44 +129,42 @@ static enum request_state dstport(const uint8_t c, struct request_parser* p) {
     return next;
 }
 
-extern void request_parser_init(struct request_parser* p) {
+void request_parser_init(struct request_parser* p) {
     p->state = REQUEST_VERSION;
     memset(p->request, 0, sizeof(*(p->request)));
 }
 
-extern enum request_state request_parser_feed(struct request_parser* p, const uint8_t c) {
+enum request_state request_parser_feed(struct request_parser* p, const uint8_t b) {
     enum request_state next;
 
     switch (p->state) {
         case REQUEST_VERSION:
-            next = version(c, p);
+            next = version(b, p);
             break;
         case REQUEST_CMD:
-            next = cmd(c, p);
+            next = cmd(b, p);
             break;
         case REQUEST_RSV:
-            next = rsv(c, p);
+            next = rsv(b, p);
             break;
         case REQUEST_ATYP:
-            next = atyp(c, p);
+            next = atyp(b, p);
             break;
         case REQUEST_DSTADDR_FQDN:
-            next = dstaddr_fqdn(c, p);
+            next = dstaddr_fqdn(b, p);
             break;
         case REQUEST_DSTADDR:
-            next = dstaddr(c, p);
+            next = dstaddr(b, p);
             break;
         case REQUEST_DSTPORT:
-            next = dstport(c, p);
+            next = dstport(b, p);
             break;
         case REQUEST_DONE:
         case REQUEST_ERROR:
         case REQUEST_ERROR_UNSUPPORTED_VERSION:
         case REQUEST_ERROR_UNSUPPORTED_ATYP:
-            next = p->state;
             break;
         default:
-            // next = REQUEST_ERROR;
             abort();
             break;
     }
@@ -173,36 +172,83 @@ extern enum request_state request_parser_feed(struct request_parser* p, const ui
     return p->state = next;
 }
 
-extern enum request_state request_parser_consume(buffer* b, struct request_parser* p, bool* errored) {
-    enum request_state st = p->state;
-    while (buffer_can_read(b)) {
-        const uint8_t c = buffer_read(b);
-        st = request_parser_feed(p, c);
-        if (request_parser_is_done(st, errored)) {
+enum request_state request_parser_consume(buffer* b, struct request_parser* p, bool* errored) {
+    uint8_t byte;
+    while (!request_parser_is_done(p->state, errored) && buffer_can_read(b)) {
+        byte = buffer_read(b);
+        p->state = request_parser_feed(p, byte);
+    }
+
+    return request_parser_is_done(p->state, errored);
+}
+
+bool request_parser_is_done(enum request_state st, bool* errored) {
+    if (errored != NULL) {
+        *errored = false;
+    }
+    switch (st) {
+        case REQUEST_DONE:
+            return true;
             break;
-        }
+
+        case REQUEST_VERSION:
+        case REQUEST_CMD:
+        case REQUEST_RSV:
+        case REQUEST_ATYP:
+        case REQUEST_DSTADDR_FQDN:
+        case REQUEST_DSTADDR:
+        case REQUEST_DSTPORT:
+            return false;
+            break;
+
+        case REQUEST_ERROR_UNSUPPORTED_VERSION:
+        case REQUEST_ERROR_UNSUPPORTED_ATYP:
+        case REQUEST_ERROR:
+        default:
+            if (errored != NULL) {
+                *errored = true;
+            }
+            return true;
+            break;
     }
-    return st; 
 }
 
-extern bool request_parser_is_done(const enum request_state st, bool* errored) {
-    if (st >= REQUEST_ERROR && errored != 0) {
-        *errored = true;
+char* request_parser_error(struct request_parser* p) {
+    switch (p->state) {
+        case REQUEST_DONE:
+        case REQUEST_VERSION:
+        case REQUEST_CMD:
+        case REQUEST_RSV:
+        case REQUEST_ATYP:
+        case REQUEST_DSTADDR_FQDN:
+        case REQUEST_DSTADDR:
+        case REQUEST_DSTPORT:
+            return "No error";
+            break;
+
+        case REQUEST_ERROR_UNSUPPORTED_VERSION:
+            return "Unsupported version";
+            break;
+        case REQUEST_ERROR_UNSUPPORTED_ATYP:
+            return "Unsupported address type";
+            break;
+        default:
+            return "Error";
+            break;
     }
-    return st >= REQUEST_DONE; 
 }
 
-extern void request_parser_close(struct request_parser* p) {
+void request_parser_close(struct request_parser* p) {
     // Nada que hacer
 }
 
-extern int request_parser_marshall(buffer *b, const enum socks5_response_status status) {
-    size_t  n;
-    uint8_t *buff = buffer_write_ptr(b, &n);
-    if(n < 10) {
+int request_parser_marshall(buffer* b, const enum socks5_response_status status) {
+    size_t n;
+    uint8_t* buff = buffer_write_ptr(b, &n);
+    if (n < 10) {
         return -1;
     }
-    buff[0] = 0x05;
+    buff[0] = SOCKS5_VERSION;
     buff[1] = status;
     buff[2] = 0x00;
     buff[3] = SOCKS5_REQ_ADDRTYPE_IPV4;

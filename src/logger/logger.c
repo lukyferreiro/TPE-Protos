@@ -12,10 +12,9 @@ void setLogLevel(LOG_LEVEL newLevel) {
         current_level = newLevel;
 }
 
-char *levelDescription(LOG_LEVEL level) {
-    static char *description[] = {"DEBUG", "INFO", "ERROR", "FATAL"};
+char* levelDescription(LOG_LEVEL level) {
+    static char* description[] = {"DEBUG", "INFO", "ERROR", "FATAL"};
     if (level < DEBUG || level > FATAL)
         return "";
     return description[level];
 }
-
