@@ -125,9 +125,9 @@ void request_parser_close(struct request_parser* p);
 
 /**
  * Serializa en buff la una respuesta al request.
- * Retorna la cantidad de bytes ocupados del buffer o -1 si no habíaespacio suficiente.
+ * Retorna la cantidad de bytes ocupados del buffer o -1 si no había espacio suficiente.
  */
-int request_parser_marshall(buffer *b, const enum socks5_response_status status);
+int request_parser_marshall(buffer *b, const enum socks5_response_status status, const enum socks5_addr_type atyp, const union socks5_addr dest_addr, const in_port_t dest_port);
 
 /** Convierte a errno en socks5_response_status */
 enum socks5_response_status errno_to_socks(int e);

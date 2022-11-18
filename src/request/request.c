@@ -15,7 +15,7 @@
 #define IPV4_LEN 4
 #define IPV6_LEN 16
 #define PORT_LEN 2
-#define SOCKS5_REQUEST_LEN 6
+#define DEFAULT_REQUEST_LEN 6
 #define SOCKS5_VERSION 0x05
 
 static void remaining_set(struct request_parser* p, const int n) {
@@ -242,25 +242,60 @@ void request_parser_close(struct request_parser* p) {
     // Nada que hacer
 }
 
-int request_parser_marshall(buffer* b, const enum socks5_response_status status) {
+int request_parser_marshall(buffer *b, const enum socks5_response_status status,
+                            const enum socks5_addr_type atyp,
+                            const union socks5_addr dest_addr, 
+                            const in_port_t dest_port) {
     size_t n;
+    int request_len = DEFAULT_REQUEST_LEN;
+    int dest_addr_size = 0;
+    uint8_t* aux_dest_addr = NULL;
     uint8_t* buff = buffer_write_ptr(b, &n);
-    if (n < 10) {
+
+    switch (atyp) {
+        case SOCKS5_REQ_ADDRTYPE_IPV4:
+            dest_addr_size = IPV4_LEN;
+            request_len += dest_addr_size;
+            aux_dest_addr = (uint8_t *)malloc(dest_addr_size * sizeof(uint8_t));
+            memcpy(aux_dest_addr, &dest_addr.ipv4.sin_addr, dest_addr_size);
+            break;
+
+        case SOCKS5_REQ_ADDRTYPE_IPV6:
+            dest_addr_size = IPV6_LEN;
+            request_len += dest_addr_size;
+            aux_dest_addr = (uint8_t *)malloc(dest_addr_size * sizeof(uint8_t));
+            memcpy(aux_dest_addr, &dest_addr.ipv6.sin6_addr, dest_addr_size);
+            break;
+
+        case SOCKS5_REQ_ADDRTYPE_DOMAIN:
+            dest_addr_size = strlen(dest_addr.fqdn);
+            aux_dest_addr = (uint8_t *)malloc((dest_addr_size + 1) * sizeof(uint8_t));
+            aux_dest_addr[0] = dest_addr_size;
+            memcpy(aux_dest_addr + 1, dest_addr.fqdn, dest_addr_size);
+            dest_addr_size++;
+            request_len += dest_addr_size;
+            break;
+        default:
+            log(LOG_ERROR, "Invalid ATYP in request_parser_marshall");
+            return -1;
+            break;
+    }
+    
+    if (n < request_len) {
+        free(aux_dest_addr);
         return -1;
     }
+
     buff[0] = SOCKS5_VERSION;
     buff[1] = status;
     buff[2] = 0x00;
-    buff[3] = SOCKS5_REQ_ADDRTYPE_IPV4;
-    buff[4] = 0x00;
-    buff[5] = 0x00;
-    buff[6] = 0x00;
-    buff[7] = 0x00;
-    buff[8] = 0x00;
-    buff[9] = 0x00;
-
-    buffer_write_adv(b, 10);
-    return 10;
+    buff[3] = atyp;
+    memcpy(&buff[4], aux_dest_addr, dest_addr_size);
+    memcpy(&buff[4 + dest_addr_size], &dest_port, 2);
+    free(aux_dest_addr);
+    buffer_write_adv(b, request_len);
+    return request_len;
+    
 }
 
 enum socks5_response_status errno_to_socks(const int e) {

@@ -857,29 +857,43 @@ static void request_connecting_init(const unsigned state, struct selector_key* k
 static unsigned request_connecting(struct selector_key* key) {
     int error;
     socklen_t len = sizeof(error);
+    unsigned ret = REQUEST_CONNECTING;
     struct socks5* s = ATTACHMENT(key);
-    struct connecting* d = &s->orig.conn;
+    struct request_st* d = &ATTACHMENT(key)->client.request;
 
-    if (getsockopt(key->fd, SOL_SOCKET, SO_ERROR, &error, &len) < 0) {
-        *d->status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
-    } else {
-        if (error == 0) {
-            *d->status = SOCKS5_STATUS_SUCCEED;
-            *d->origin_fd = key->fd;
+    if (getsockopt(*s->orig.conn.origin_fd, SOL_SOCKET, SO_ERROR, &error, &len) == 0) {
+        if(selector_set_interest(key->s, *s->orig.conn.client_fd, OP_WRITE) != SELECTOR_SUCCESS) {
+            s->client.request.status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
+            ret = ERROR;    
+        } else if (error == 0) {
+            log(INFO, "Connection to origin success");
+            s->client.request.status = SOCKS5_STATUS_SUCCEED;
         } else {
-            *d->status = errno_to_socks(error);
+            log(LOG_ERROR, "Connection to origin failed");
+            s->client.request.status = errno_to_socks(error);
+            if(selector_set_interest_key(key, OP_NOOP) != SELECTOR_SUCCESS) {
+                ret = ERROR;
+                s->client.request.status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
+            }
+        }
+
+        freeaddrinfo(s->origin_resolution);
+        s->origin_resolution = 0;
+
+        int ocupped_bytes = request_parser_marshall(s->orig.conn.wb, *s->orig.conn.status, s->client.request.request.dest_addr_type,
+                                         s->client.request.request.dest_addr, s->client.request.request.dest_port);
+
+        if (ocupped_bytes != -1) {
+            ret = REQUEST_WRITE;
+            if(selector_set_interest(key->s, *s->orig.conn.origin_fd, OP_READ) != SELECTOR_SUCCESS) {
+                ret = ERROR;
+            }
+        } else {
+            ret = ERROR;
         }
     }
-    if (request_parser_marshall(d->wb, *d->status) == -1) {
-        *d->status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
-        abort(); // El buffer tiene que ser mas grande en la variable
-    }
 
-    selector_status status = 0;
-    status |= selector_set_interest(key->s, *d->client_fd, OP_WRITE);
-    status |= selector_set_interest_key(key, OP_NOOP);
-
-    return SELECTOR_SUCCESS == s ? REQUEST_WRITE : ERROR;
+    return ret;
 }
 
 /** Escribe todos los bytes de la respuesta al mensaje 'request' */
