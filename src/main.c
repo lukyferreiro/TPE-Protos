@@ -30,6 +30,7 @@
 
 static bool done = false;
 extern struct socks5_args socks5_args;
+extern struct socks5_stats socks5_stats;
 
 static void sigterm_handler(const int signal) {
     printf("Signal %d, cleaning up and exiting\n", signal);

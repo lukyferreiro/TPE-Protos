@@ -2,6 +2,7 @@
 #include "args.h"
 #include "buffer.h"
 #include "alpha.h"
+#include "user_utils.h"
 #include "logger.h"
 #include <arpa/inet.h>
 #include <errno.h>
@@ -91,13 +92,13 @@ void manager_receive(struct selector_key *key) {
                          &alpha_manager.client_addr_len);
 
     if (n <= 0) {
-        log_print(LOG_ERROR, "Alpha manager: recvfrom failed: %s ",
+        log(LOG_ERROR, "Alpha manager: recvfrom failed: %s ",
                   strerror(errno));
     }
 
     if (udp_to_alpha_req(alpha_manager.buffer_read,
                                   &alpha_manager.alpha_req) < 0) {
-        log_print(LOG_ERROR,
+        log(LOG_ERROR,
                   "Alpha manager: converting raw packet to request failed");
     }
 
@@ -111,14 +112,14 @@ void manager_receive(struct selector_key *key) {
     if (alpha_res_to_packet(alpha_manager.buffer_write,
                                &alpha_manager.alpha_res,
                                &alpha_manager.response_len) < 0) {
-        log_print(LOG_ERROR,
+        log(LOG_ERROR,
                   "Alpha manager: converting response to buffer failed");
     }
 
     if (sendto(key->fd, alpha_manager.buffer_write, alpha_manager.response_len, 0,
                (const struct sockaddr *)&alpha_manager.client_addr,
                alpha_manager.client_addr_len) < 0) {
-        log_print(LOG_ERROR, "Alpha manager: sendto client not available");
+        log(LOG_ERROR, "Alpha manager: sendto client not available");
     }
 }
 
@@ -127,6 +128,7 @@ static bool check_admin_token(struct alpha_req alpha_req) {
    //     return false;
     //return true;
     //Agregar campo a socks5_args
+    return true;
 }
 
 static bool check_version(struct alpha_req alpha_req) {
@@ -199,6 +201,18 @@ static void get_list_handler(alpha_res* alpha_res, alpha_req alpha_req){
         }
     }
     *(alpha_res->data.string + --string_offset) = '\0';
+}
+
+static void get_hist_conn_handler(alpha_res* alpha_res, alpha_req alpha_req){
+
+} 
+
+static void get_conc_conn_handler(alpha_res* alpha_res, alpha_req alpha_req){
+
+} 
+
+static void get_bytes_transf_handler(alpha_res* alpha_res, alpha_req alpha_req){
+
 }
 
 static void get_is_sniff_handler(alpha_res* alpha_res, alpha_req alpha_req){

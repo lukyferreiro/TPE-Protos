@@ -6,7 +6,6 @@
 #include <stdio.h>  /* for printf */
 #include <stdlib.h> /* for exit */
 #include <string.h> /* memset */
-
 #include "args.h"
 #include "user_utils.h"
 

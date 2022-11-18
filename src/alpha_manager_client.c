@@ -70,7 +70,7 @@ alpha_shell_command alpha_shell_commands[] = {
      .nparams = 0,
      .description = "Returns the status of authentication over the server",
      .on_success_message = "Authentication status"},
-    {.name = "getpage",
+    {.name = "getpagesize",
      .param_name = "",
      .nparams = 0,
      .description = "Returns the amount of users per page (max 200)",
@@ -113,8 +113,8 @@ alpha_shell_command alpha_shell_commands[] = {
 };
 
 static bool done = false;
-static struct alpha_req alpha_req;
-static struct alpha_res alpha_res;
+static struct alpha_req alpha_manager_req;
+static struct alpha_res alpha_manager_res;
 uint16_t id_counter;
 uint32_t token;
 
@@ -206,14 +206,14 @@ int main(int argc, const char *argv[]) {
             if (strcmp(command, alpha_shell_commands[i_command].name) == 0) {
                 if(alpha_shell_commands[i_command].nparams==0){
                     if(param==NULL){
-                        valid_param=header_builder_no_param(&alpha_req, i_command);
+                        valid_param=header_builder_no_param(&alpha_manager_req, i_command);
                     }else{
                         valid_param=false;
                     }
                 }
                 if(alpha_shell_commands[i_command].nparams>0 ){
                     if(param!=NULL){
-                        header_builder_with_param(&alpha_req, i_command, param);
+                        header_builder_with_param(&alpha_manager_req, i_command, param);
                     }
                     else {
                         valid_param=false;
@@ -243,7 +243,7 @@ int main(int argc, const char *argv[]) {
         memset(buffer_in, 0, BUFFER_SIZE);
         memset(buffer_out, 0, BUFFER_SIZE);
 
-        if (alpha_req_to_packet(buffer_out, &alpha_req, &req_size) < 0) {
+        if (alpha_req_to_packet(buffer_out, &alpha_manager_req, &req_size) < 0) {
             fprintf(stderr, "Error building request packet");
         }
 
@@ -273,12 +273,12 @@ int main(int argc, const char *argv[]) {
         }
 
         //handleo la response del server
-        if (udp_to_alpha_res(buffer_in, &alpha_res) < 0) {
+        if (udp_to_alpha_res(buffer_in, &alpha_manager_res) < 0) {
             fprintf(stderr, "Error converting raw packet to response");
             continue;
         }
 
-        response_handler(alpha_req, alpha_res,
+        response_handler(alpha_manager_req, alpha_manager_res,
                          alpha_shell_commands[i_command].on_success_message);
     }
 }
@@ -294,13 +294,14 @@ static bool header_builder_no_param(struct alpha_req *alpha_req, unsigned cmd) {
 }
 
 static bool header_builder_with_param(struct alpha_req *alpha_req, unsigned cmd, char* param) {
+    int aux;
     switch (cmd)
     {
     case GET_LIST:
-        int size = atoi(param);
-        if (size <= 0)
+        aux = atoi(param);
+        if (aux <= 0)
             return false;
-        alpha_req->data.alpha_uint8= size;
+        alpha_req->data.alpha_uint8= aux;
         break;
     
     case POST_ADD_USER:
@@ -321,11 +322,11 @@ static bool header_builder_with_param(struct alpha_req *alpha_req, unsigned cmd,
         break;
 
     case POST_USER_PAGE_SIZE:
-        int arg = atoi(param);
-        if (arg < MIN_PAGE_SIZE || arg > MAX_PAGE_SIZE) {
+        aux = atoi(param);
+        if (aux < MIN_PAGE_SIZE || aux > MAX_PAGE_SIZE) {
             return false;
         }
-        alpha_req->data.alpha_uint8 = arg;
+        alpha_req->data.alpha_uint8 = aux;
         break;
     default:
         return false;

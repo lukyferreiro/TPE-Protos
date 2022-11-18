@@ -1,4 +1,5 @@
 #include "alpha.h"
+#include "user_utils.h"
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <string.h>
@@ -106,7 +107,7 @@ int udp_to_alpha_res(char *raw, alpha_res *response){
     raw += sizeof(uint16_t);
 
     if (response->status == SC_OK)
-        read_data(&response->data, cmd_to_resp_data_type(response->command), raw);
+        read_data(&response->data, cmd_to_res_data_type(response->command), raw);
 
     return 0;
 }
@@ -213,7 +214,7 @@ static int get_packet_size(alpha_packet_type alpha_packet_type, unsigned command
         alpha_data = cmd_to_req_data_type(command);
     } else {
         size += ALPHA_RESPONSE_HEADER_SIZE;
-        alpha_data = cmd_to_resp_data_type(command);
+        alpha_data = cmd_to_res_data_type(command);
     }
 
     switch (alpha_data) {
@@ -258,4 +259,8 @@ static void alpha_data_to_buffer(current_alpha_data input, alpha_data alpha_data
     default:
         break;
     }
+}
+
+char* alpha_error_report(alpha_status_code status_code){
+    return NULL;
 }
