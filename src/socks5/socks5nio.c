@@ -125,9 +125,6 @@ enum socks_v5state {
      */
     COPY,
 
-    /**
-     * Si el mecanismo de autenticacion es [05 02]
-     */
     USERPASS_READ,
     USERPASS_WRITE,
 
@@ -179,6 +176,11 @@ struct copy {
     struct copy* other;
 };
 
+struct auth_st {
+    buffer* rb;
+    buffer* wb;
+};
+
 /*
  * Si bien cada estado tiene su propio struct que le da un alcance
  * acotado, disponemos de la siguiente estructura para hacer una única
@@ -212,6 +214,7 @@ struct socks5 {
         struct hello_st hello;
         struct request_st request;
         struct copy copy;
+        struct auth_st auth;
     } client;
 
     /** Estados para el origin_fd */
@@ -279,7 +282,10 @@ static unsigned copy_read(struct selector_key* key);
 static unsigned copy_write(struct selector_key* key);
 
 // Declaraciones de userpass
-
+static void auth_init(const unsigned state, struct selector_key* key);
+static unsigned auth_process(struct auth_st* d);
+static unsigned auth_read(struct selector_key* key);
+static unsigned auth_write(struct selector_key* key);
 //-----------------------------------------------------------------------------
 
 static const struct fd_handler socks5_handler = {
@@ -327,13 +333,13 @@ static const struct state_definition client_statbl[] = {
         .on_write_ready = copy_write,
     },
     {
-        .state = USERPASS_READ
-        // ... ??
+        .state = USERPASS_READ,
+        .on_arrival = auth_init,
+        .on_read_ready = auth_read,
     },
-    {
-        .state = USERPASS_WRITE
-        // ... ??
-    },
+    {   .state = USERPASS_WRITE,
+        .on_write_ready = auth_write,
+        },
     {.state = DONE},
     {.state = ERROR}};
 
@@ -748,7 +754,7 @@ static unsigned request_connect_to_origin(struct selector_key* key, struct reque
     int* fd = d->origin_fd;
     bool error = false;
 
-    //Para los logs
+    // Para los logs
     char* tmp = (char*)malloc(INET_ADDRSTRLEN * sizeof(char));
     char* addr = inet_ntop(AF_INET, &d->request.dest_addr.ipv4.sin_addr, tmp, INET_ADDRSTRLEN);
 
@@ -864,27 +870,27 @@ static unsigned request_connecting(struct selector_key* key) {
     struct request_st* d = &ATTACHMENT(key)->client.request;
 
     if (getsockopt(*s->orig.conn.origin_fd, SOL_SOCKET, SO_ERROR, &error, &len) == 0) {
-        if(selector_set_interest(key->s, *s->orig.conn.client_fd, OP_WRITE) != SELECTOR_SUCCESS) {
+        if (selector_set_interest(key->s, *s->orig.conn.client_fd, OP_WRITE) != SELECTOR_SUCCESS) {
             s->client.request.status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
-            ret = ERROR;    
+            ret = ERROR;
         } else if (error == 0) {
             log(INFO, "Connection to origin success");
             s->client.request.status = SOCKS5_STATUS_SUCCEED;
         } else {
             log(LOG_ERROR, "Connection to origin failed");
             s->client.request.status = errno_to_socks(error);
-            if(selector_set_interest_key(key, OP_NOOP) != SELECTOR_SUCCESS) {
+            if (selector_set_interest_key(key, OP_NOOP) != SELECTOR_SUCCESS) {
                 ret = ERROR;
                 s->client.request.status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
             }
         }
 
         int ocupped_bytes = request_parser_marshall(s->orig.conn.wb, *s->orig.conn.status, s->client.request.request.dest_addr_type,
-                                         s->client.request.request.dest_addr, s->client.request.request.dest_port);
+                                                    s->client.request.request.dest_addr, s->client.request.request.dest_port);
 
         if (ocupped_bytes != -1) {
             ret = REQUEST_WRITE;
-            if(selector_set_interest(key->s, *s->orig.conn.origin_fd, OP_READ) != SELECTOR_SUCCESS) {
+            if (selector_set_interest(key->s, *s->orig.conn.origin_fd, OP_READ) != SELECTOR_SUCCESS) {
                 ret = ERROR;
             }
         } else {
@@ -913,9 +919,9 @@ static unsigned request_write(struct selector_key* key) {
         if (!buffer_can_read(b)) {
             if (d->status == SOCKS5_STATUS_SUCCEED) {
                 ret = COPY;
-                if(selector_set_interest_key(key, OP_READ) != SELECTOR_SUCCESS) {
+                if (selector_set_interest_key(key, OP_READ) != SELECTOR_SUCCESS) {
                     ret = ERROR;
-                }   
+                }
             }
         }
     }
