@@ -13,10 +13,11 @@
 #define DEFAULT_IPV6_ADDR_MNG "::1"
 #define DEFAULT_PORT_MNG 8080
 #define DEFAULT_VERSION "1.0"
+#define MAX_LEN_USERS 64
 
 struct users {
-    char* name;
-    char* pass;
+    char name[MAX_LEN_USERS];
+    char pass[MAX_LEN_USERS];
 };
 
 struct socks5_args {
@@ -34,6 +35,7 @@ struct socks5_args {
     struct users users[MAX_USERS];
 
     bool disectors_enabled;
+    bool authentication;
 };
 
 /**

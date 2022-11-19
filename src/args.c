@@ -25,6 +25,7 @@ static unsigned short port(const char* s) {
 }
 
 static void user(char* s, struct users* user) {
+
     char* p = strchr(s, USER_PASSWORD_DELIMETER);
     if (p == NULL) {
         fprintf(stderr, "Password not found\n");
@@ -32,8 +33,19 @@ static void user(char* s, struct users* user) {
     } else {
         *p = 0;
         p++;
-        user->name = s;
-        user->pass = p;
+
+        if (strlen(s) > MAX_LEN_USERS) {
+            fprintf(stderr, "Username specified is greater than %d\n", MAX_LEN_USERS);
+            exit(1);
+        }else if(strlen(p) > MAX_LEN_USERS){
+            fprintf(stderr, "password specified is greater than %d\n", MAX_LEN_USERS);
+            exit(1);
+        }
+
+        //TODO: chequear que el usuario no este repetido
+
+        strcpy(user->name, s);
+        strcpy(user->pass, p);
     }
 }
 
@@ -76,6 +88,8 @@ void parse_args(const int argc, char** argv, struct socks5_args* args) {
 
     args->disectors_enabled = true;
 
+    args->authentication = false;
+
     int c;
     while (true) {
         c = getopt(argc, argv, "hl:L:Np:P:u:v");
@@ -116,6 +130,7 @@ void parse_args(const int argc, char** argv, struct socks5_args* args) {
                 } else {
                     user(optarg, args->users + args->nusers);
                     args->nusers++;
+                    args->authentication = true;
                 }
                 break;
             case 'v':

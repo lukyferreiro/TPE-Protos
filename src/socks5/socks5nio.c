@@ -32,6 +32,8 @@ static const unsigned max_pool = 50; // Tamaño maximo
 static unsigned pool_size = 0;       // Tamaño actual
 static struct socks5* pool = 0;      // Pool propiamente dicho
 
+struct socks5_args socks5_args;
+
 /** Maquina de estados general */
 enum socks_v5state {
     /**
@@ -521,7 +523,12 @@ fail:
 /** Callback del parser utilizado en 'read_hello' */
 static void on_hello_method(struct hello_parser* p, const uint8_t method) {
     uint8_t* selected = p->data;
-    if (METHOD_NO_AUTHENTICATION_REQUIRED == method) {
+
+    if (socks5_args.authentication == true){
+        if(METHOD_AUTHENTICATION == method){
+            *selected = method;
+        }
+    }else if (METHOD_NO_AUTHENTICATION_REQUIRED == method) {
         *selected = method;
     }
 }
@@ -599,6 +606,8 @@ static unsigned hello_write(struct selector_key* key) {
         buffer_read_adv(d->wb, n);
         if (!buffer_can_read(d->wb)) {
             if (selector_set_interest_key(key, OP_READ) == SELECTOR_SUCCESS) {
+
+                //TODO: chquear si la auth esta prendida, si esta prendida transicionar al estado AUTH_READ
                 ret = REQUEST_READ;
             } else {
                 ret = ERROR;
