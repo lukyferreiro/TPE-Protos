@@ -50,9 +50,9 @@ int main(const int argc, const char** argv) {
     int fds_socks5_size = 0;
     parse_args(argc, argv, &socks5_args);
 
-    //--------------------------------------------------------------
+    //---------------------------------------------------------------
     // Creamos los sockets pasivos IPv4 e IPv6 para el proxy SOCKSv5
-    //--------------------------------------------------------------
+    //---------------------------------------------------------------
     fd = create_socket(&socks5_args, ADDR_IPV4);
     if (fd < 0) {
         log(DEBUG, "Cannot create IPv4 passive socket of SOCKSv5");

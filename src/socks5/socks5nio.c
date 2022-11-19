@@ -323,8 +323,8 @@ static const struct state_definition client_statbl[] = {
     {
         .state = COPY,
         .on_arrival = copy_init,
-        .on_departure = copy_read,
-        .on_read_ready = copy_write,
+        .on_read_ready = copy_read,
+        .on_write_ready = copy_write,
     },
     {
         .state = USERPASS_READ
@@ -419,6 +419,7 @@ void socksv5_pool_destroy(void) {
         close(s->client_fd);
         free(s);
     }
+    pool = NULL;
 }
 
 static void socksv5_read(struct selector_key* key) {
@@ -980,7 +981,6 @@ static struct copy* copy_prt(struct selector_key* key) {
 /** Lee bytes de un socket y los encola para ser escritos en otro socket */
 static unsigned copy_read(struct selector_key* key) {
     struct copy* d = copy_prt(key);
-    assert(*d->fd == key->fd);
     buffer* b = d->rb;
     unsigned ret = COPY;
 
@@ -1011,7 +1011,6 @@ static unsigned copy_read(struct selector_key* key) {
 /** Escribe bytes encolados */
 static unsigned copy_write(struct selector_key* key) {
     struct copy* d = copy_prt(key);
-    assert(*d->fd == key->fd);
     buffer* b = d->wb;
     unsigned ret = COPY;
 
