@@ -826,7 +826,8 @@ static unsigned request_resolv_done(struct selector_key* key) {
 
     if (s->origin_resolution == 0) {
         log(INFO, "Resolution failed");
-        d->status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
+        d->status = SOCKS5_STATUS_HOST_UNREACHABLE;
+        return REQUEST_WRITE;
     } else {
         log(DEBUG, "Resolution success");
         s->origin_domain = s->origin_resolution->ai_family;
@@ -877,9 +878,6 @@ static unsigned request_connecting(struct selector_key* key) {
             }
         }
 
-        freeaddrinfo(s->origin_resolution);
-        s->origin_resolution = 0;
-
         int ocupped_bytes = request_parser_marshall(s->orig.conn.wb, *s->orig.conn.status, s->client.request.request.dest_addr_type,
                                          s->client.request.request.dest_addr, s->client.request.request.dest_port);
 
@@ -914,14 +912,9 @@ static unsigned request_write(struct selector_key* key) {
         if (!buffer_can_read(b)) {
             if (d->status == SOCKS5_STATUS_SUCCEED) {
                 ret = COPY;
-                selector_set_interest(key->s, *d->client_fd, OP_READ);
-                selector_set_interest(key->s, *d->origin_fd, OP_READ);
-            } else {
-                ret = DONE;
-                selector_set_interest(key->s, *d->client_fd, OP_NOOP);
-                if (*d->origin_fd != -1) {
-                    selector_set_interest(key->s, *d->origin_fd, OP_NOOP);
-                }
+                if(selector_set_interest_key(key, OP_READ) != SELECTOR_SUCCESS) {
+                    ret = ERROR;
+                }   
             }
         }
     }
