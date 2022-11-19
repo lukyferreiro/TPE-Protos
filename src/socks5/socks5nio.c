@@ -16,6 +16,7 @@
 #include <unistd.h> // close
 
 #include "args.h"
+#include "auth.h"
 #include "buffer.h"
 #include "hello.h"
 #include "logger.h"
@@ -181,6 +182,13 @@ struct copy {
 struct auth_st {
     buffer* rb;
     buffer* wb;
+    struct auth_parser parser;
+    uint8_t status;
+
+    uint8_t user_len;
+    char username[MAX_LEN_USERS];
+    uint8_t pass_len;
+    char password[MAX_LEN_USERS];
 };
 
 /*
@@ -339,9 +347,10 @@ static const struct state_definition client_statbl[] = {
         .on_arrival = auth_init,
         .on_read_ready = auth_read,
     },
-    {   .state = USERPASS_WRITE,
+    {
+        .state = USERPASS_WRITE,
         .on_write_ready = auth_write,
-        },
+    },
     {.state = DONE},
     {.state = ERROR}};
 
@@ -524,11 +533,11 @@ fail:
 static void on_hello_method(struct hello_parser* p, const uint8_t method) {
     uint8_t* selected = p->data;
 
-    if (socks5_args.authentication == true){
-        if(METHOD_AUTHENTICATION == method){
+    if (socks5_args.authentication == true) {
+        if (METHOD_AUTHENTICATION == method) {
             *selected = method;
         }
-    }else if (METHOD_NO_AUTHENTICATION_REQUIRED == method) {
+    } else if (METHOD_NO_AUTHENTICATION_REQUIRED == method) {
         *selected = method;
     }
 }
@@ -607,7 +616,7 @@ static unsigned hello_write(struct selector_key* key) {
         if (!buffer_can_read(d->wb)) {
             if (selector_set_interest_key(key, OP_READ) == SELECTOR_SUCCESS) {
 
-                //TODO: chquear si la auth esta prendida, si esta prendida transicionar al estado AUTH_READ
+                // TODO: chquear si la auth esta prendida, si esta prendida transicionar al estado AUTH_READ
                 ret = REQUEST_READ;
             } else {
                 ret = ERROR;
@@ -1056,3 +1065,24 @@ static unsigned copy_write(struct selector_key* key) {
 ////////////////////////////////////////////////////////////////////////////////
 //----------------------------------USERPASS------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
+
+static void auth_init(const unsigned state, struct selector_key* key) {
+    struct socks5* s = ATTACHMENT(key);
+    struct auth_st* d = &s->client.auth;
+    d->rb = &(s->read_buffer);
+    d->wb = &(s->write_buffer);
+    auth_parser_init(&d->parser);
+    d->user_len = &d->parser.user_len;
+    d->username = &d->parser.username;
+    d->pass_len = &d->parser.pass_len;
+    d->password = &d->parser.password;
+}
+
+static unsigned auth_process(struct auth_st* d) {
+}
+
+static unsigned auth_read(struct selector_key* key) {
+}
+
+static unsigned auth_write(struct selector_key* key) {
+}

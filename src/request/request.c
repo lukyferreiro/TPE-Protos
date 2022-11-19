@@ -1,22 +1,12 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 
-/**
- * Parser del request de SOCKS5
- */
+#include "request.h"
+#include "logger.h"
 #include <arpa/inet.h>
 #include <errno.h>
-#include <string.h> // memset
-
-#include "logger.h"
-#include "request.h"
 #include <stdlib.h>
-
-#define IPV4_LEN 4
-#define IPV6_LEN 16
-#define PORT_LEN 2
-#define DEFAULT_REQUEST_LEN 6
-#define SOCKS5_VERSION 0x05
+#include <string.h> // memset
 
 static void remaining_set(struct request_parser* p, const int n) {
     p->readBytes = 0;
@@ -131,13 +121,12 @@ static enum request_state dstport(const uint8_t c, struct request_parser* p) {
 
 void request_parser_init(struct request_parser* p) {
     p->state = REQUEST_VERSION;
-    memset(p->request, 0, sizeof(*(p->request)));
 }
 
 enum request_state request_parser_feed(struct request_parser* p, const uint8_t b) {
     enum request_state next;
-
     switch (p->state) {
+        //Segun el estado en el que me encuentre, paso al siguiente
         case REQUEST_VERSION:
             next = version(b, p);
             break;
@@ -163,8 +152,10 @@ enum request_state request_parser_feed(struct request_parser* p, const uint8_t b
         case REQUEST_ERROR:
         case REQUEST_ERROR_UNSUPPORTED_VERSION:
         case REQUEST_ERROR_UNSUPPORTED_ATYP:
+            // Nada para hacer
             break;
         default:
+            log(DEBUG, "Unknown state on request parser");
             abort();
             break;
     }
@@ -242,9 +233,9 @@ void request_parser_close(struct request_parser* p) {
     // Nada que hacer
 }
 
-int request_parser_marshall(buffer *b, const enum socks5_response_status status,
+int request_parser_marshall(buffer* b, const enum socks5_response_status status,
                             const enum socks5_addr_type atyp,
-                            const union socks5_addr dest_addr, 
+                            const union socks5_addr dest_addr,
                             const in_port_t dest_port) {
     size_t n;
     int request_len = DEFAULT_REQUEST_LEN;
@@ -256,20 +247,20 @@ int request_parser_marshall(buffer *b, const enum socks5_response_status status,
         case SOCKS5_REQ_ADDRTYPE_IPV4:
             dest_addr_size = IPV4_LEN;
             request_len += dest_addr_size;
-            aux_dest_addr = (uint8_t *)malloc(dest_addr_size * sizeof(uint8_t));
+            aux_dest_addr = (uint8_t*)malloc(dest_addr_size * sizeof(uint8_t));
             memcpy(aux_dest_addr, &dest_addr.ipv4.sin_addr, dest_addr_size);
             break;
 
         case SOCKS5_REQ_ADDRTYPE_IPV6:
             dest_addr_size = IPV6_LEN;
             request_len += dest_addr_size;
-            aux_dest_addr = (uint8_t *)malloc(dest_addr_size * sizeof(uint8_t));
+            aux_dest_addr = (uint8_t*)malloc(dest_addr_size * sizeof(uint8_t));
             memcpy(aux_dest_addr, &dest_addr.ipv6.sin6_addr, dest_addr_size);
             break;
 
         case SOCKS5_REQ_ADDRTYPE_DOMAIN:
             dest_addr_size = strlen(dest_addr.fqdn);
-            aux_dest_addr = (uint8_t *)malloc((dest_addr_size + 1) * sizeof(uint8_t));
+            aux_dest_addr = (uint8_t*)malloc((dest_addr_size + 1) * sizeof(uint8_t));
             aux_dest_addr[0] = dest_addr_size;
             memcpy(aux_dest_addr + 1, dest_addr.fqdn, dest_addr_size);
             dest_addr_size++;
@@ -280,7 +271,7 @@ int request_parser_marshall(buffer *b, const enum socks5_response_status status,
             return -1;
             break;
     }
-    
+
     if (n < request_len) {
         free(aux_dest_addr);
         return -1;
@@ -295,7 +286,6 @@ int request_parser_marshall(buffer *b, const enum socks5_response_status status,
     free(aux_dest_addr);
     buffer_write_adv(b, request_len);
     return request_len;
-    
 }
 
 enum socks5_response_status errno_to_socks(const int e) {

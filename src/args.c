@@ -35,14 +35,14 @@ static void user(char* s, struct users* user) {
         p++;
 
         if (strlen(s) > MAX_LEN_USERS) {
-            fprintf(stderr, "Username specified is greater than %d\n", MAX_LEN_USERS);
+            fprintf(stderr, "Username specified is greater than %d\n", MAX_LEN_USERS-1);
             exit(1);
-        }else if(strlen(p) > MAX_LEN_USERS){
-            fprintf(stderr, "password specified is greater than %d\n", MAX_LEN_USERS);
+        } else if (strlen(p) > MAX_LEN_USERS) {
+            fprintf(stderr, "Password specified is greater than %d\n", MAX_LEN_USERS-1);
             exit(1);
         }
 
-        //TODO: chequear que el usuario no este repetido
+        // TODO: chequear que el usuario no este repetido
 
         strcpy(user->name, s);
         strcpy(user->pass, p);
@@ -101,14 +101,14 @@ void parse_args(const int argc, char** argv, struct socks5_args* args) {
                 usage(argv[0]);
                 break;
             case 'l':
-                //Si encontramos ':', voy a usar IPv6
-                if (strchr(optarg, ':') != NULL) 
+                // Si encontramos ':', voy a usar IPv6
+                if (strchr(optarg, ':') != NULL)
                     args->socks_addr6 = optarg;
                 else
                     args->socks_addr = optarg;
                 break;
             case 'L':
-                //Si encontramos ':', voy a usar IPv6
+                // Si encontramos ':', voy a usar IPv6
                 if (strchr(optarg, ':') != NULL)
                     args->mng_addr6 = optarg;
                 else

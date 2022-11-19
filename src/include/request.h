@@ -1,13 +1,18 @@
 #ifndef Au9MTAsFSOTIW3GaVruXIl3gVBU_REQUEST_H
 #define Au9MTAsFSOTIW3GaVruXIl3gVBU_REQUEST_H
 
+#include "buffer.h"
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "buffer.h"
+#define IPV4_LEN 4
+#define IPV6_LEN 16
+#define PORT_LEN 2
+#define DEFAULT_REQUEST_LEN 6
+#define SOCKS5_VERSION 0x05
 
 /*   The SOCKS request is formed as follows:
  *
@@ -109,7 +114,7 @@ enum request_state request_parser_feed(struct request_parser* p, const uint8_t b
 enum request_state request_parser_consume(buffer* b, struct request_parser* p, bool* errored);
 
 /**
- * Permite distinguir a quien usa s'ocks_hello_parser_feed' si debe seguir
+ * Permite distinguir a quien usa 'request_parser_feed' si debe seguir
  * enviando caracters o no.
  * En caso de haber terminado permite tambien saber si se debe a un error
  */
@@ -124,10 +129,10 @@ char* request_parser_error(struct request_parser* p);
 void request_parser_close(struct request_parser* p);
 
 /**
- * Serializa en buff la una respuesta al request.
+ * Serializa en buff la respuesta al request.
  * Retorna la cantidad de bytes ocupados del buffer o -1 si no había espacio suficiente.
  */
-int request_parser_marshall(buffer *b, const enum socks5_response_status status, const enum socks5_addr_type atyp, const union socks5_addr dest_addr, const in_port_t dest_port);
+int request_parser_marshall(buffer* b, const enum socks5_response_status status, const enum socks5_addr_type atyp, const union socks5_addr dest_addr, const in_port_t dest_port);
 
 /** Convierte a errno en socks5_response_status */
 enum socks5_response_status errno_to_socks(int e);
