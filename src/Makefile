@@ -12,7 +12,7 @@ main:
 	$(GCC) $(LDFLAGS) $(GCCFLAGS) -o alpha_manager alpha_manager_client.c $(UTILS)
 
 clean:
-	rm -rf main tcpServer
+	rm -rf main alpha_manager
 	rm -rf ./check
 
 check:

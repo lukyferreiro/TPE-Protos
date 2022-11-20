@@ -1,6 +1,8 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 
+#include "args.h"
+#include "socks_utils.h"
 #include <errno.h>
 #include <getopt.h>
 #include <limits.h> /* LONG_MIN et al */
@@ -8,9 +10,6 @@
 #include <stdio.h>  /* for printf */
 #include <stdlib.h> /* for exit */
 #include <string.h> /* memset */
-#include "args.h"
-#include "socks_utils.h"
-
 
 struct socks5_args socks5_args;
 
@@ -20,7 +19,7 @@ static unsigned short port(const char* s) {
 
     if (end == s || '\0' != *end || ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno) || sl < 0 || sl > USHRT_MAX) {
         fprintf(stderr, "Port should be in the range of 1-65536: %s\n", s);
-        exit(1);
+        exit(EXIT_FAILURE);
         return 1;
     }
     return (unsigned short)sl;
@@ -30,22 +29,22 @@ static void user(char* s, struct users* user) {
     char* p = strchr(s, USER_PASSWORD_DELIMETER);
     if (p == NULL) {
         fprintf(stderr, "Password not found\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     } else {
         *p = 0;
         p++;
 
         if (strlen(s) > MAX_LEN_USERS) {
             fprintf(stderr, "Username specified is greater than %d\n", MAX_LEN_USERS);
-            exit(1);
+            exit(EXIT_FAILURE);
         } else if (strlen(p) > MAX_LEN_USERS) {
             fprintf(stderr, "Password specified is greater than %d\n", MAX_LEN_USERS);
-            exit(1);
+            exit(EXIT_FAILURE);
         }
 
         if (valid_user_is_registered(s)) {
             fprintf(stderr, "User already exists\n");
-            exit(1);
+            exit(EXIT_FAILURE);
         }
 
         strcpy(user->name, s);
@@ -87,17 +86,23 @@ void parse_args(const int argc, char** argv, struct socks5_args* args) {
     args->mng_addr = DEFAULT_IPV6_ADDR_MNG;
     args->mng_port = DEFAULT_PORT_MNG;
 
+    char* token = getenv(ALPHA_TKN);
+    if (token == NULL || strlen(token) < MIN_TOKEN_SIZE || strlen(token) > MAX_TOKEN_SIZE) {
+        fprintf(stderr, "Check that the environment token ALPHA_TKN exists\n");
+        fprintf(stderr, "Token must be between 3 and 5 characters\n");
+        exit(EXIT_FAILURE);
+    }
+    args->mng_token = strtoul(token, NULL, 10);
+
     args->version = DEFAULT_VERSION;
     args->nusers = 0;
 
     args->sniffing = true;
-
-
     args->authentication = false;
 
     int c;
     while (true) {
-        c = getopt(argc, argv, "hl:L:Np:P:u:v");
+        c = getopt(argc, argv, "h:l:L:Np:P:u:v");
         if (c == -1)
             break;
 
@@ -140,11 +145,11 @@ void parse_args(const int argc, char** argv, struct socks5_args* args) {
                 break;
             case 'v':
                 version();
-                exit(0);
+                exit(EXIT_SUCCESS);
                 break;
             default:
                 fprintf(stderr, "Unknown argument %d.\n", c);
-                exit(1);
+                exit(EXIT_FAILURE);
         }
     }
     if (optind < argc) {
@@ -153,6 +158,6 @@ void parse_args(const int argc, char** argv, struct socks5_args* args) {
             fprintf(stderr, "%s ", argv[optind++]);
         }
         fprintf(stderr, "\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 }

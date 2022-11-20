@@ -11,14 +11,14 @@
 
 struct socks5_args socks5_args;
 
-int create_socket(struct socks5_args *args, addr_type addr_type) {
+int create_socket(struct socks5_args* args, addr_type addr_type) {
 
     struct sockaddr_in addr;
     struct sockaddr_in6 addr_6;
     int ip_version = (addr_type == ADDR_IPV4) ? AF_INET : AF_INET6;
     int port = args->socks_port;
-    char *address4 = args->socks_addr;
-    char *address6 = args->socks_addr6;
+    char* address4 = args->socks_addr;
+    char* address6 = args->socks_addr6;
     int new_socket = socket(ip_version, SOCK_STREAM, IPPROTO_TCP);
 
     if (new_socket < 0) {
@@ -27,12 +27,12 @@ int create_socket(struct socks5_args *args, addr_type addr_type) {
     }
 
     // Setsockopt para IPv4
-    if (setsockopt(new_socket, SOL_SOCKET, SO_REUSEADDR, &(int) {1}, sizeof(int)) < 0) {
+    if (setsockopt(new_socket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0) {
         log(LOG_ERROR, "Cannot set socket options");
     }
 
     // Setsockopt para IPv6
-    if (addr_type == ADDR_IPV6 && setsockopt(new_socket, IPPROTO_IPV6, IPV6_V6ONLY, &(int) {1}, sizeof(int)) < 0) {
+    if (addr_type == ADDR_IPV6 && setsockopt(new_socket, IPPROTO_IPV6, IPV6_V6ONLY, &(int){1}, sizeof(int)) < 0) {
         log(LOG_ERROR, "Cannot set socket options");
     }
 
@@ -47,7 +47,7 @@ int create_socket(struct socks5_args *args, addr_type addr_type) {
             close(new_socket);
             return -1;
         }
-        if (bind(new_socket, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+        if (bind(new_socket, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
             log(LOG_ERROR, "Cannot bind socket");
             close(new_socket);
             return -1;
@@ -62,7 +62,7 @@ int create_socket(struct socks5_args *args, addr_type addr_type) {
             return -1;
         }
 
-        if (bind(new_socket, (struct sockaddr *) &addr_6, sizeof(addr_6)) < 0) {
+        if (bind(new_socket, (struct sockaddr*)&addr_6, sizeof(addr_6)) < 0) {
             log(LOG_ERROR, "Cannot bind socket");
             close(new_socket);
             return -1;
@@ -83,33 +83,36 @@ int create_socket(struct socks5_args *args, addr_type addr_type) {
     return new_socket;
 }
 
-bool valid_user_and_password(char *user, char *pass) {
+bool valid_user_and_password(char* user, char* pass) {
     for (int i = 0; i < MAX_USERS; i++) {
-        if (strcmp(user, socks5_args.users[i].name) == 0 && strcmp(pass, socks5_args.users[i].pass) == 0) {
+        if (socks5_args.users[i].name[0] != 0 && strcmp(user, socks5_args.users[i].name) == 0 && strcmp(pass, socks5_args.users[i].pass) == 0) {
             return true;
         }
     }
     return false;
 }
 
-bool valid_user_is_registered(char *user) {
+bool valid_user_is_registered(char* user) {
     for (int i = 0; i < MAX_USERS; i++) {
-        if (strcmp(user, socks5_args.users[i].name) == 0)
+        if (socks5_args.users[i].name[0] != 0 && strcmp(user, socks5_args.users[i].name) == 0) {
+            fprintf(stderr, "%s\n", socks5_args.users[i].name);
             return true;
+        }
     }
     return false;
 }
 
+bool server_check_if_full() {
+    return socks5_args.nusers == MAX_USERS;
+}
 
-bool server_check_if_full() { return socks5_args.nusers == MAX_USERS; }
-
-void add_user(char *user, char *pass) {
+void add_user(char* user, char* pass) {
     bool done = false;
     for (int i = 0; i < MAX_USERS && done == false; i++) {
         if (socks5_args.users[i].name[0] == 0) {
-            char *usern = socks5_args.users[i].name;
+            char* usern = socks5_args.users[i].name;
+            char* passw = socks5_args.users[i].pass;
             strcpy(usern, user);
-            char *passw = socks5_args.users[i].pass;
             strcpy(passw, pass);
             socks5_args.nusers++;
             done = true;
@@ -117,15 +120,14 @@ void add_user(char *user, char *pass) {
     }
 }
 
-void delete_user(char *user) {
-    bool not_found = true;
-    for (int i = 0; i < MAX_USERS && not_found; i++) {
-        if (socks5_args.users[i].name[0] != 0 &&
-            strcmp(user, socks5_args.users[i].name) == 0) {
+void delete_user(char* user) {
+    bool flag = true;
+    for (int i = 0; i < MAX_USERS && flag; i++) {
+        if (socks5_args.users[i].name[0] != 0 && strcmp(user, socks5_args.users[i].name) == 0) {
             socks5_args.nusers--;
             socks5_args.users[i].pass[0] = 0;
             socks5_args.users[i].name[0] = 0;
-            not_found = false;
+            flag = false;
         }
     }
 }
