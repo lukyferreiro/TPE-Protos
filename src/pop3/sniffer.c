@@ -5,7 +5,7 @@
 // based on  www.rfc-es.org/rfc/rfc1939-es.txt
 
 static const char *OK = "+OK";
-static const char *USER = "USER ";
+static const char *USER = "USER ";  //respuestas establecidas por el rfc
 static const char *PASS = "PASS ";
 static const char *ERR = "-ERR";
 
@@ -123,7 +123,8 @@ enum sniffer_state sniffer_parser_consume(struct sniffer_parser *p,){
 
     if (p->current_state == SNIFFER_SUCCESS)
     {
-      // print con el logger? o algo
+        log(INFO, p->username);
+        log(INFO, p->password);
     }
 
     return p->current_state;

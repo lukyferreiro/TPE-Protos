@@ -8,22 +8,23 @@
 #include "logger.h"
 
 #define MAX_LEN_USERS 64
-#define RAW_BUFF_SNIFFER_SIZE 4096  //for CRLF
+#define RAW_BUFF_SNIFFER_SIZE 4096 // for CRLF       - especifica que la longitud de un indicador de estado está limitada a
+                                   //512 octetos, incluyendo el CRLF quote rfc 1939.
 
 #define N(x) (sizeof(x) / sizeof((x)[0]))
 
-typedef enum sniffer_state
-{
-    SNIFFER_OK,
-    SNIFFER_USER,
-    SNIFFER_READ_USER,
-    SNIFFER_PASS,
-    SNIFFER_READ_PASS,
-    SNIFFER_CHECK_OK,
-    SNIFFER_TRAP,
-    SNIFFER_SUCCESS
-} sniffer_state;
+             typedef enum sniffer_state {
+                 SNIFFER_OK,
+                 SNIFFER_USER,
+                 SNIFFER_READ_USER,
+                 SNIFFER_PASS,
+                 SNIFFER_READ_PASS,
+                 SNIFFER_CHECK_OK,
+                 SNIFFER_TRAP,
+                 SNIFFER_SUCCESS
+             } sniffer_state;
 
+             
 typedef struct sniffer_parser
 {
     sniffer_state state;
