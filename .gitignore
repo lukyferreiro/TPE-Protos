@@ -70,6 +70,8 @@ report.tasks
 strace_out
 valgrind_log.txt
 check
+socks5d
+alpha_manager
 
 # JetBrains IDE
 .idea/
