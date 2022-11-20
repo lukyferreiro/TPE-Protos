@@ -2,6 +2,7 @@
 #define ARGS_H_kFlmYm1tW9p5npzDr2opQJ9jM8
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #define MAX_USERS 10
 #define USER_PASSWORD_DELIMETER ':'
@@ -35,7 +36,8 @@ struct socks5_args {
     int nusers;
     struct users users[MAX_USERS];
 
-    bool disectors_enabled;
+    uint32_t        manager_token;
+    bool            sniffing;
     bool authentication;
 };
 

@@ -8,9 +8,9 @@
 #include <stdio.h>  /* for printf */
 #include <stdlib.h> /* for exit */
 #include <string.h> /* memset */
-
 #include "args.h"
 #include "socks_utils.h"
+
 
 struct socks5_args socks5_args;
 
@@ -27,7 +27,6 @@ static unsigned short port(const char* s) {
 }
 
 static void user(char* s, struct users* user) {
-
     char* p = strchr(s, USER_PASSWORD_DELIMETER);
     if (p == NULL) {
         fprintf(stderr, "Password not found\n");
@@ -44,8 +43,8 @@ static void user(char* s, struct users* user) {
             exit(1);
         }
 
-        if (valid_user_is_registerd(s)) {
-            fprintf(stderr, "Duplicate user specified\n");
+        if (valid_user_is_registered(s)) {
+            fprintf(stderr, "User already exists\n");
             exit(1);
         }
 
@@ -91,7 +90,8 @@ void parse_args(const int argc, char** argv, struct socks5_args* args) {
     args->version = DEFAULT_VERSION;
     args->nusers = 0;
 
-    args->disectors_enabled = true;
+    args->sniffing = true;
+
 
     args->authentication = false;
 
@@ -120,7 +120,7 @@ void parse_args(const int argc, char** argv, struct socks5_args* args) {
                     args->mng_addr = optarg;
                 break;
             case 'N':
-                args->disectors_enabled = false;
+                args->sniffing = false;
                 break;
             case 'p':
                 args->socks_port = port(optarg);
