@@ -11,9 +11,9 @@ static const char *ERR = "-ERR";
 
 void sniffer_parser_init(sniffer_parser *p){
     buffer_init(&p->buffer, N(p->raw_buff), p->raw_buff);
-    p->current_state = SNIFFER_OK;
-    p->read_bytes = 0;
-    p->remaining_bytes = strlen(OK);
+    p->state = SNIFFER_OK;
+    p->bytes_read = 0;
+    p->bytes_remaining = strlen(OK);
     p->is_initiated = true;
 }
 
@@ -22,7 +22,7 @@ enum sniffer_state user_message(struct sniffer_parser *p,uint8_t b){
     if (tolower(b) == tolower(*(USER + p->bytes_read)))
     {
         p->bytes_read++;
-        p->remaining_bytes--;
+        p->bytes_remaining--;
         if (p -> bytes_remaining == 0)
         {
             p->bytes_read = 0;
@@ -38,7 +38,7 @@ enum sniffer_state user_message(struct sniffer_parser *p,uint8_t b){
 }
 
 enum sniffer_state pass_message(struct sniffer_parser *p,uint8_t b){
-    if (tolower(b) == tolower(*(PASS + p->read_bytes)))   //rfc 1939
+    if (tolower(b) == tolower(*(PASS + p->bytes_read)))   //rfc 1939
     {
         p->bytes_read++;
         p->bytes_remaining--;
@@ -114,48 +114,62 @@ static enum sniffer_state ok_message(struct sniffer_parser *p, uint8_t b){
     return SNIFFER_OK;
 }
 
-enum sniffer_state sniffer_parser_consume(struct sniffer_parser *p,){
+enum sniffer_state sniffer_parser_consume(struct sniffer_parser *p){
     while (buffer_can_read(&p->buffer) && !sniffer_parser_is_done(p))
     {
         uint8_t byte = buffer_read(&p->buffer);
-        p->current_state = sniffer_parser_feed(p, byte);
+        p->state = sniffer_parser_feed(p, byte);
     }
 
-    if (p->current_state == SNIFFER_SUCCESS)
+    if (p->state == SNIFFER_SUCCESS)
     {
-        log(INFO, p->username);
-        log(INFO, p->password);
+        log(INFO,"%s\n", p->username);
+        log(INFO,"%s\n", p->password);
     }
 
-    return p->current_state;
+    return p->state;
 }
+
+enum sniffer_state check_ok(struct sniffer_parser *p, uint8_t b) {
+    if (tolower(b) == tolower(*(OK + p->bytes_read))) {
+        p->bytes_read++;
+        if (p->bytes_read == strlen(OK))
+            return SNIFFER_SUCCESS;
+    } else if (tolower(b) == tolower(*(ERR + p->bytes_read))) {
+        p->bytes_read++;
+        if (p->bytes_read == strlen(ERR))
+            return SNIFFER_USER;
+    }
+    return SNIFFER_CHECK_OK;
+}
+
 
 enum sniffer_state sniffer_parser_feed(sniffer_parser *p,const uint8_t b){
     switch (p->state)
     {
     case SNIFFER_OK:
-        p->current_state = ok_message(p, b);
+        p->state = ok_message(p, b);
         break;
 
     case SNIFFER_USER:
-        p->current_state = user_message(p, b);
+        p->state = user_message(p, b);
         break;
 
     case SNIFFER_READ_USER:
-        p->current_state = read_username(p, b);
+        p->state = read_username(p, b);
         break;
 
     case SNIFFER_PASS:
-        p->current_state = pass_message(p, b);
+        p->state = pass_message(p, b);
         ;
         break;
 
     case SNIFFER_READ_PASS:
-        p->current_state = read_password(p, b);
+        p->state = read_password(p, b);
         break;
 
     case SNIFFER_CHECK_OK:
-        p->current_state = check_ok(p, b);
+        p->state = check_ok(p, b);
         break;
 
     case SNIFFER_TRAP:
