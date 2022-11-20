@@ -293,7 +293,7 @@ static unsigned request_write(struct selector_key* key);
 static void request_read_close(const unsigned state, struct selector_key* key);
 
 // Declaraciones de copy
-static void pop3_sniffer(struct selector_key* key, uint8_t* sniffer_ptr, ssize_t size);
+static void sniff_credentials(struct selector_key* key, uint8_t* sniffer_ptr, ssize_t size);
 static void copy_init(const unsigned state, struct selector_key* key);
 static fd_interest copy_compute_interests(fd_selector s, struct copy* d);
 static struct copy* copy_prt(struct selector_key* key);
@@ -965,7 +965,7 @@ static void request_read_close(const unsigned state, struct selector_key* key) {
 //------------------------------------COPY--------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
 
-static void pop3_sniffer(struct selector_key* key, uint8_t* sniffer_ptr, ssize_t size) {
+static void sniff_credentials(struct selector_key* key, uint8_t* sniffer_ptr, ssize_t size) {
     struct sniffer_parser* p = &ATTACHMENT(key)->sniffer;
     if (!p->is_initiated) {
         sniffer_parser_init(p);
@@ -1050,7 +1050,7 @@ static unsigned copy_read(struct selector_key* key) {
         }
     } else {
         if (socks5_args.sniffing) {
-            pop3_sniffer(key, ptr, n);
+            sniff_credentials(key, ptr, n);
         }
         buffer_write_adv(b, n);
     }
@@ -1082,7 +1082,7 @@ static unsigned copy_write(struct selector_key* key) {
         }
     } else {
         if (socks5_args.sniffing) {
-            pop3_sniffer(key, ptr, n);
+            sniff_credentials(key, ptr, n);
         }
         buffer_read_adv(b, n);
     }
