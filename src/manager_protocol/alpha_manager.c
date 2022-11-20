@@ -9,6 +9,7 @@
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include "statistics_utils.h"
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -21,8 +22,8 @@ typedef void (*res_handler_fun)(alpha_res *, alpha_req);
 
 static void set_response_header(struct alpha_req alpha_req,
                               struct alpha_res *alpha_res);
-
-extern struct socks5_args socks5_args;
+struct socks5_args socks5_args;
+struct socks5_stats socks5_stats;
 
 //done
 static void get_list_handler(alpha_res* alpha_res, alpha_req alpha_req);
@@ -204,15 +205,15 @@ static void get_list_handler(alpha_res* alpha_res, alpha_req alpha_req){
 }
 
 static void get_hist_conn_handler(alpha_res* alpha_res, alpha_req alpha_req){
-
+            alpha_res->data.alpha_uint32 = socks5_stats.his_conn;
 } 
 
 static void get_conc_conn_handler(alpha_res* alpha_res, alpha_req alpha_req){
-
+            alpha_res->data.alpha_uint16 = socks5_stats.conc_conn;
 } 
 
 static void get_bytes_transf_handler(alpha_res* alpha_res, alpha_req alpha_req){
-
+            alpha_res->data.alpha_uint32 = socks5_stats.bytes_transfered;
 }
 
 static void get_is_sniff_handler(alpha_res* alpha_res, alpha_req alpha_req){
