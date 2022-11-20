@@ -8,11 +8,11 @@ UTILS = ./logger/logger.c ./utils/util.c ./buffer/buffer.c ./hello/hello.c ./aut
 all: main
 
 main: 
-	$(GCC) $(LDFLAGS) $(GCCFLAGS) -o main main.c $(UTILS)
+	$(GCC) $(LDFLAGS) $(GCCFLAGS) -o socks5d main.c $(UTILS)
 	$(GCC) $(LDFLAGS) $(GCCFLAGS) -o alpha_manager alpha_manager_client.c $(UTILS)
 
 clean:
-	rm -rf main alpha_manager
+	rm -rf socks5d alpha_manager
 	rm -rf ./check
 
 check:

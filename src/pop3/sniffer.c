@@ -151,7 +151,7 @@ enum sniffer_state sniffer_parser_consume(struct sniffer_parser* p) {
         p->state = sniffer_parser_feed(p, byte);
     }
 
-    return request_parser_is_done(p->state);
+    return sniffer_parser_is_done(p);
 }
 
 bool sniffer_parser_is_done(struct sniffer_parser* p) {
