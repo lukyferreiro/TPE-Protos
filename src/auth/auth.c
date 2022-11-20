@@ -11,23 +11,23 @@ void auth_parser_init(struct auth_parser* p) {
 }
 
 enum auth_state auth_parser_feed(struct auth_parser* p, const uint8_t b) {
-    enum auth_state next;
+
     switch (p->state) {
         // Segun el estado en el que me encuentre, paso al siguiente
         case AUTH_VERSION:
             if (b == p->version) {
-                next = AUTH_USERNAME_LEN;
+                p->state = AUTH_USERNAME_LEN;
             } else {
-                next = AUTH_ERROR;
+                p->state = AUTH_ERROR;
                 p->status = AUTH_INVALID_VERSION;
             }
             break;
         case AUTH_USERNAME_LEN:
             if (b < 1) {
-                next = AUTH_ERROR;
+                p->state = AUTH_ERROR;
                 p->status = AUTH_INVALID_USERNAME_LEN;
             } else {
-                next = AUTH_USERNAME;
+                p->state = AUTH_USERNAME;
                 p->user_len = b;
                 p->credentials = 0;
             }
@@ -36,15 +36,15 @@ enum auth_state auth_parser_feed(struct auth_parser* p, const uint8_t b) {
             p->username[p->credentials++] = (char)b;
             if (p->credentials == p->user_len) {
                 p->username[p->credentials] = 0;
-                next = AUTH_PASSWORD_LEN;
+                p->state = AUTH_PASSWORD_LEN;
             }
             break;
         case AUTH_PASSWORD_LEN:
             if (b < 1) {
-                next = AUTH_ERROR;
+                p->state = AUTH_ERROR;
                 p->status = AUTH_INVALID_PASSWORD_LEN;
             } else {
-                next = AUTH_PASSWORD;
+                p->state = AUTH_PASSWORD;
                 p->pass_len = b;
                 p->credentials = 0;
             }
@@ -53,7 +53,7 @@ enum auth_state auth_parser_feed(struct auth_parser* p, const uint8_t b) {
             p->password[p->credentials++] = (char)b;
             if (p->credentials == p->pass_len) {
                 p->password[p->credentials] = 0;
-                next = AUTH_DONE;
+                p->state = AUTH_DONE;
             }
             break;
         case AUTH_DONE:
@@ -65,7 +65,7 @@ enum auth_state auth_parser_feed(struct auth_parser* p, const uint8_t b) {
             abort();
             break;
     }
-    return p->state = next;
+    return p->state;
 }
 
 bool auth_parser_consume(buffer* buffer, struct auth_parser* p, bool* errored) {

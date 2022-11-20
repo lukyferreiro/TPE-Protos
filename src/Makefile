@@ -4,7 +4,7 @@ GCC = gcc
 GCCFLAGS = -g --std=c11 -Wall -Wextra -D_POSIX_C_SOURCE=200112L -Wno-unused-parameter -Wno-implicit-fallthrough $(INCLUDE) 
 #-lrt
 LDFLAGS = -pthread
-UTILS = ./logger/logger.c ./utils/util.c ./utils/tcpServerUtil.c ./utils/tcpClientUtil.c ./buffer/buffer.c ./hello/hello.c ./parser/parser_utils.c ./parser/parser.c ./selector/selector.c ./socks5/socks5nio.c ./stm/stm.c ./args.c ./request/request.c ./utils/socks_utils.c
+UTILS = ./logger/logger.c ./utils/util.c ./utils/tcpServerUtil.c ./utils/tcpClientUtil.c ./buffer/buffer.c ./hello/hello.c ./auth/auth.c ./parser/parser_utils.c ./parser/parser.c ./selector/selector.c ./socks5/socks5nio.c ./stm/stm.c ./args.c ./request/request.c ./utils/socks_utils.c
 
 all: main
 

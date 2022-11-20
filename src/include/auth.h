@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define MAX_LEN_USERS 64
+#define MAX_LEN_USERS 128
 #define AUTH_SUCCESS 0x00
 #define AUTH_FAIL 0x01
 #define AUTH_VERSION_VALUE 0x01

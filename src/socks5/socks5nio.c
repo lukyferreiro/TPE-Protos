@@ -23,6 +23,7 @@
 #include "netutils.h"
 #include "request.h"
 #include "socks5nio.h"
+#include "socks_utils.h"
 #include "stm.h"
 
 #define N(x) (sizeof(x) / sizeof((x)[0]))
@@ -186,9 +187,9 @@ struct auth_st {
     uint8_t status;
 
     uint8_t user_len;
-    char username[MAX_LEN_USERS];
+    char* username;
     uint8_t pass_len;
-    char password[MAX_LEN_USERS];
+    char* password;
 };
 
 /*
@@ -1073,12 +1074,25 @@ static void auth_init(const unsigned state, struct selector_key* key) {
     d->wb = &(s->write_buffer);
     auth_parser_init(&d->parser);
     d->user_len = &d->parser.user_len;
-    strcpy(d->username, &d->parser.username);
+    d->username = &d->parser.username;
     d->pass_len = &d->parser.pass_len;
-    strcpy(d->password, &d->parser.password);
+    d->password = &d->parser.password;
 }
 
 static unsigned auth_process(struct auth_st* d) {
+
+    unsigned ret = USERPASS_WRITE;
+    uint8_t status = AUTH_SUCCESS;
+
+    if(!valid_user_and_password(d->username, d->password)){
+        status = AUTH_FAIL;
+    }
+
+    if (auth_parser_marshall(d->wb, status, d->parser.version) < 0) {
+        ret = ERROR;
+    }
+    d->status = status;
+    return ret;
 }
 
 static unsigned auth_read(struct selector_key* key) {
@@ -1109,4 +1123,28 @@ static unsigned auth_read(struct selector_key* key) {
 
 
 static unsigned auth_write(struct selector_key* key) {
+
+    struct socks5* s = ATTACHMENT(key);
+    struct auth_st* d = &s->client.auth;
+    unsigned ret = USERPASS_WRITE;
+
+    // Leo bytes del socket y los mando
+    size_t count;
+    uint8_t* ptr = buffer_read_ptr(d->wb, &count);
+    ssize_t n = send(key->fd, ptr, count, MSG_NOSIGNAL);
+
+    if (n == -1) {
+        ret = ERROR;
+    } else {
+        buffer_read_adv(d->wb, n);
+        if (!buffer_can_read(d->wb)) {
+            if (selector_set_interest_key(key, OP_READ) == SELECTOR_SUCCESS) {
+                ret = REQUEST_READ;
+            } else {
+                ret = ERROR;
+            }
+        }
+    }
+
+    return ret;
 }

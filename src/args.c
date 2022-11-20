@@ -7,6 +7,7 @@
 #include <stdio.h>  /* for printf */
 #include <stdlib.h> /* for exit */
 #include <string.h> /* memset */
+#include <logger.h>
 
 #include "args.h"
 
@@ -35,10 +36,10 @@ static void user(char* s, struct users* user) {
         p++;
 
         if (strlen(s) > MAX_LEN_USERS) {
-            fprintf(stderr, "Username specified is greater than %d\n", MAX_LEN_USERS-1);
+            fprintf(stderr, "Username specified is greater than %d\n", MAX_LEN_USERS);
             exit(1);
         } else if (strlen(p) > MAX_LEN_USERS) {
-            fprintf(stderr, "Password specified is greater than %d\n", MAX_LEN_USERS-1);
+            fprintf(stderr, "Password specified is greater than %d\n", MAX_LEN_USERS);
             exit(1);
         }
 

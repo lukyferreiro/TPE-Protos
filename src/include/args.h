@@ -13,7 +13,7 @@
 #define DEFAULT_IPV6_ADDR_MNG "::1"
 #define DEFAULT_PORT_MNG 8080
 #define DEFAULT_VERSION "1.0"
-#define MAX_LEN_USERS 64
+#define MAX_LEN_USERS 128
 
 struct users {
     char name[MAX_LEN_USERS];
