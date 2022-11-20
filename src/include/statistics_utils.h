@@ -1,9 +1,10 @@
-#ifndef STATISTICS_H
-#define STATISTICS_H
-#include <stdlib.h>
+#ifndef __STATISTICS_H_
+#define __STATISTICS_H_
+
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdbool.h>
+#include <stdlib.h>
 
 struct socks5_stats {
     uint32_t bytes_transfered;
@@ -12,7 +13,7 @@ struct socks5_stats {
     int nusers;
 };
 
-void init_stats(struct socks5_stats * socks5_stats);
+void init_stats(struct socks5_stats* socks5_stats);
 void inc_current_connections(void);
 void dec_current_connections(void);
 void add_bytes_transferred(uint32_t bytes);

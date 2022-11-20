@@ -5,7 +5,7 @@
 
 struct socks5_stats socks5_stats;
 
-void init_stats(struct socks5_stats *socks5_stats) {
+void init_stats(struct socks5_stats* socks5_stats) {
     memset(socks5_stats, 0, sizeof(*socks5_stats));
 }
 
@@ -24,4 +24,6 @@ void add_bytes_transferred(uint32_t bytes) {
     socks5_stats.bytes_transfered += bytes;
 }
 
-void inc_nusers(void) { socks5_stats.nusers++; }
+void inc_nusers(void) { 
+    socks5_stats.nusers++;
+}

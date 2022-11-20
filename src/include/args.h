@@ -43,7 +43,7 @@ struct socks5_args {
     struct users users[MAX_USERS];
 
     bool sniffing;
-    bool authentication;
+    bool auth;
 };
 
 /**

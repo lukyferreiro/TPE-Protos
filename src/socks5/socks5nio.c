@@ -4,6 +4,17 @@
 /**
  * Controla el flujo de un proxy SOCKSv5 (sockets no bloqueantes)
  */
+#include "socks5nio.h"
+#include "args.h"
+#include "auth.h"
+#include "buffer.h"
+#include "hello.h"
+#include "logger.h"
+#include "netutils.h"
+#include "request.h"
+#include "sniffer.h"
+#include "socks_utils.h"
+#include "stm.h"
 #include <arpa/inet.h>
 #include <assert.h> // assert
 #include <errno.h>
@@ -15,17 +26,6 @@
 #include <time.h>
 #include <unistd.h> // close
 
-#include "args.h"
-#include "auth.h"
-#include "buffer.h"
-#include "hello.h"
-#include "logger.h"
-#include "netutils.h"
-#include "request.h"
-#include "socks5nio.h"
-#include "socks_utils.h"
-#include "stm.h"
-
 #define N(x) (sizeof(x) / sizeof((x)[0]))
 /** Obtiene el struct (socks5 *) desde la llave de selección */
 #define ATTACHMENT(key) ((struct socks5*)(key)->data)
@@ -34,7 +34,8 @@ static const unsigned max_pool = 50; // Tamaño maximo
 static unsigned pool_size = 0;       // Tamaño actual
 static struct socks5* pool = 0;      // Pool propiamente dicho
 
-struct socks5_args socks5_args;
+extern struct socks5_args socks5_args; 
+extern struct socks5_stats socks5_stats;
 
 /** Maquina de estados general */
 enum socks_v5state {
@@ -204,6 +205,8 @@ struct auth_st {
  */
 struct socks5 {
 
+    int error;
+
     /** Informacion del cliente */
     struct sockaddr_storage client_addr;
     socklen_t client_addr_len;
@@ -219,6 +222,8 @@ struct socks5 {
     socklen_t origin_addr_len;
     int origin_domain;
     int origin_fd;
+
+    struct sniffer_parser sniffer;
 
     struct state_machine stm; // Maquinas de estados
 
@@ -288,6 +293,7 @@ static unsigned request_write(struct selector_key* key);
 static void request_read_close(const unsigned state, struct selector_key* key);
 
 // Declaraciones de copy
+static void pop3_sniffer(struct selector_key* key, uint8_t* sniffer_ptr, ssize_t size);
 static void copy_init(const unsigned state, struct selector_key* key);
 static fd_interest copy_compute_interests(fd_selector s, struct copy* d);
 static struct copy* copy_prt(struct selector_key* key);
@@ -534,8 +540,7 @@ fail:
 /** Callback del parser utilizado en 'read_hello' */
 static void on_hello_method(struct hello_parser* p, const uint8_t method) {
     uint8_t* selected = p->data;
-
-    if (socks5_args.authentication == true) {
+    if (socks5_args.auth == true) {
         if (METHOD_AUTHENTICATION == method) {
             *selected = method;
         }
@@ -960,6 +965,26 @@ static void request_read_close(const unsigned state, struct selector_key* key) {
 //------------------------------------COPY--------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
 
+static void pop3_sniffer(struct selector_key* key, uint8_t* sniffer_ptr, ssize_t size) {
+    struct sniffer_parser* p = &ATTACHMENT(key)->sniffer;
+    if (!p->is_initiated) {
+        sniffer_parser_init(p);
+    }
+    if (!sniffer_parser_is_done(p)) {
+        size_t count;
+        uint8_t* ptr = buffer_write_ptr(&p->buffer, &count);
+
+        if ((unsigned)size <= count) {
+            memcpy(ptr, sniffer_ptr, size);
+            buffer_write_adv(&p->buffer, size);
+        } else {
+            memcpy(ptr, sniffer_ptr, count);
+            buffer_write_adv(&p->buffer, count);
+        }
+        sniffer_parser_consume(p);
+    }
+}
+
 static void copy_init(const unsigned state, struct selector_key* key) {
     struct socks5* s = ATTACHMENT(key);
     struct copy* d = &s->client.copy;
@@ -1024,6 +1049,9 @@ static unsigned copy_read(struct selector_key* key) {
             d->other->duplex &= ~OP_WRITE;
         }
     } else {
+        if (socks5_args.sniffing) {
+            pop3_sniffer(key, ptr, n);
+        }
         buffer_write_adv(b, n);
     }
 
@@ -1053,6 +1081,9 @@ static unsigned copy_write(struct selector_key* key) {
             d->other->duplex &= ~OP_READ;
         }
     } else {
+        if (socks5_args.sniffing) {
+            pop3_sniffer(key, ptr, n);
+        }
         buffer_read_adv(b, n);
     }
 
@@ -1085,7 +1116,6 @@ static void auth_init(const unsigned state, struct selector_key* key) {
 }
 
 static unsigned auth_process(struct auth_st* d) {
-
     unsigned ret = USERPASS_WRITE;
     uint8_t status = AUTH_SUCCESS;
 
@@ -1093,7 +1123,7 @@ static unsigned auth_process(struct auth_st* d) {
         status = AUTH_FAIL;
     }
 
-    if (auth_parser_marshall(d->wb, status, d->parser.version) < 0) {
+    if (auth_parser_marshall(d->wb, status, d->parser.version) == -1) {
         ret = ERROR;
     }
     d->status = status;
@@ -1121,13 +1151,13 @@ static unsigned auth_read(struct selector_key* key) {
             }
         }
     } else {
+        error = true;
         ret = ERROR;
     }
     return error ? ERROR : ret;
 }
 
 static unsigned auth_write(struct selector_key* key) {
-
     struct socks5* s = ATTACHMENT(key);
     struct auth_st* d = &s->client.auth;
     unsigned ret = USERPASS_WRITE;

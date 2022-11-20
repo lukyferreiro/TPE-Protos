@@ -117,8 +117,8 @@ int main(const int argc, char** argv) {
 
     char* environment_token = getenv("ALPHA_TKN");
     if (environment_token == NULL || strlen(environment_token) < MIN_TOKEN_SIZE || strlen(environment_token) > MAX_TOKEN_SIZE) {
-        fprintf(stderr, "Check that the environment token ALPHA_TKN exists\n");
-        fprintf(stderr, "Token must be between 3 and 5 characters\n");
+        fprintf(stderr, "Check that the environment token %s exists\n", ALPHA_TKN);
+        fprintf(stderr, "Token must be between %d and %d characters\n", MIN_TOKEN_SIZE, MAX_TOKEN_SIZE);
         exit(EXIT_FAILURE);
     } 
 

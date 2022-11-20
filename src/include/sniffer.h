@@ -7,7 +7,7 @@
 #include "logger.h"
 #include <stdint.h>
 
-#define MAX_LEN_USERS 64
+#define MAX_LEN_USERS 128
 #define RAW_BUFF_SNIFFER_SIZE 4096 // for CRLF  Especifica que la longitud de un indicador de estado está limitada a 512 octetos, incluyendo el CRLF quote rfc 1939.
 
 #define N(x) (sizeof(x) / sizeof((x)[0]))

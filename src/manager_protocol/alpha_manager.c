@@ -193,7 +193,7 @@ static void get_is_sniff_handler(alpha_res* alpha_res, alpha_req alpha_req) {
 }
 
 static void get_is_auth_handler(alpha_res* alpha_res, alpha_req alpha_req) {
-    alpha_res->data.alpha_uint8 = socks5_args.authentication;
+    alpha_res->data.alpha_uint8 = socks5_args.auth;
 }
 
 static void post_add_user_handler(alpha_res* alpha_res, alpha_req alpha_req) {
@@ -232,9 +232,9 @@ static void post_disable_sniff_handler(alpha_res* alpha_res, alpha_req alpha_req
 }
 
 static void post_enable_auth_handler(alpha_res* alpha_res, alpha_req alpha_req) {
-    socks5_args.authentication = true;
+    socks5_args.auth = true;
 }
 
 static void post_disable_auth_handler(alpha_res* alpha_res, alpha_req alpha_req) {
-    socks5_args.authentication = false;
+    socks5_args.auth = false;
 }
