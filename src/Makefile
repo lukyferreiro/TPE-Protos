@@ -1,16 +1,14 @@
 INCLUDE = -I ./include
 GCC = gcc
-#-pedantic -pedantic-errors -O3 -fsanitize=address -Werror -Wno-pointer-arith
-GCCFLAGS = -g --std=c11 -Wall -Wextra -D_POSIX_C_SOURCE=200112L -Wno-unused-parameter -Wno-implicit-fallthrough $(INCLUDE) 
-#-lrt
-LDFLAGS = -pthread
-UTILS = ./logger/logger.c ./utils/util.c ./utils/tcpServerUtil.c ./utils/tcpClientUtil.c ./buffer/buffer.c ./hello/hello.c ./auth/auth.c ./parser/parser_utils.c ./parser/parser.c ./selector/selector.c ./socks5/socks5nio.c ./stm/stm.c ./args.c ./request/request.c ./utils/socks_utils.c
+#-pedantic -pedantic-errors 
+GCCFLAGS = -g --std=c11 -O3 -Wall -Wextra -Werror -fsanitize=address -D_POSIX_C_SOURCE=200112L -Wno-unused-parameter -Wno-implicit-fallthrough $(INCLUDE) 
+LDFLAGS = -pthread -lrt
+UTILS = ./logger/logger.c ./utils/util.c ./buffer/buffer.c ./hello/hello.c ./auth/auth.c ./selector/selector.c ./socks5/socks5nio.c ./stm/stm.c ./args.c ./request/request.c ./utils/socks_utils.c
 
 all: main
 
 main: 
 	$(GCC) $(LDFLAGS) $(GCCFLAGS) -o main main.c $(UTILS)
-	$(GCC) $(LDFLAGS) $(GCCFLAGS) -o tcpServer tcpServer.c $(UTILS)
 
 clean:
 	rm -rf main tcpServer

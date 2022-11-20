@@ -28,14 +28,14 @@ enum auth_state auth_parser_feed(struct auth_parser* p, const uint8_t b) {
                 p->status = AUTH_INVALID_USERNAME_LEN;
             } else {
                 p->state = AUTH_USERNAME;
-                p->user_len = b;
+                p->username.user_len = b;
                 p->credentials = 0;
             }
             break;
         case AUTH_USERNAME:
-            p->username[p->credentials++] = (char)b;
-            if (p->credentials == p->user_len) {
-                p->username[p->credentials] = 0;
+            p->username.user[p->credentials++] = (char)b;
+            if (p->credentials == p->username.user_len) {
+                p->username.user[p->credentials] = 0;
                 p->state = AUTH_PASSWORD_LEN;
             }
             break;
@@ -45,14 +45,14 @@ enum auth_state auth_parser_feed(struct auth_parser* p, const uint8_t b) {
                 p->status = AUTH_INVALID_PASSWORD_LEN;
             } else {
                 p->state = AUTH_PASSWORD;
-                p->pass_len = b;
+                p->password.pass_len = b;
                 p->credentials = 0;
             }
             break;
         case AUTH_PASSWORD:
-            p->password[p->credentials++] = (char)b;
-            if (p->credentials == p->pass_len) {
-                p->password[p->credentials] = 0;
+            p->password.pass[p->credentials++] = (char)b;
+            if (p->credentials == p->password.pass_len) {
+                p->password.pass[p->credentials] = 0;
                 p->state = AUTH_DONE;
             }
             break;

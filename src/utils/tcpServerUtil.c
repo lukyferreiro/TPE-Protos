@@ -1,4 +1,4 @@
-#include <sys/socket.h>
+/* #include <sys/socket.h>
 #include <errno.h>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -12,10 +12,10 @@
 #define MAX_ADDR_BUFFER 128
 
 static char addrBuffer[MAX_ADDR_BUFFER];
-/*
- ** Se encarga de resolver el número de puerto para service (puede ser un string con el numero o el nombre del servicio)
- ** y crear el socket pasivo, para que escuche en cualquier IP, ya sea v4 o v6
- */
+//
+// Se encarga de resolver el número de puerto para service (puede ser un string con el numero o el nombre del servicio)
+// y crear el socket pasivo, para que escuche en cualquier IP, ya sea v4 o v6
+//
 int setupTCPServerSocket(const char *service) {
 	// Construct the server address structure
 	struct addrinfo addrCriteria;                   // Criteria for address match
@@ -118,3 +118,4 @@ int handleTCPEchoClient(int clntSocket) {
 	close(clntSocket);
 	return 0;
 }
+ */

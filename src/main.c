@@ -36,7 +36,7 @@ static void sigterm_handler(const int signal) {
     done = true;
 }
 
-int main(const int argc, const char** argv) {
+int main(const int argc, char** argv) {
 
     // No tenemos nada que leer de stdin
     close(STDIN_FILENO);

@@ -60,16 +60,28 @@ typedef enum auth_status {
     AUTH_INVALID_PASSWORD_LEN,
 } auth_status;
 
+typedef struct username {
+    uint8_t user_len;
+    char user[MAX_LEN_USERS];
+} username;
+
+typedef struct password {
+    uint8_t pass_len;
+    char pass[MAX_LEN_USERS];
+} password;
+
 typedef struct auth_parser {
     uint8_t version;
     auth_state state;
     auth_status status;
 
-    uint8_t user_len;
+    /* uint8_t user_len;
     char username[MAX_LEN_USERS];
     uint8_t pass_len;
-    char password[MAX_LEN_USERS];
-
+    char password[MAX_LEN_USERS]; */
+    struct username username;
+    struct password password;
+    
     uint8_t credentials;
 } auth_parser;
 

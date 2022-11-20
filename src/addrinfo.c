@@ -1,7 +1,5 @@
-// This is a personal academic project. Dear PVS-Studio, please check it.
+/* // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
-
-/* Basado en findsrv.c del libro de Stevens */
 
 #include "logger.h"
 #include "util.h"
@@ -42,3 +40,4 @@ int main(int argc, char* argv[]) {
     freeaddrinfo(ailist);
     return 0;
 }
+ */

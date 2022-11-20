@@ -186,10 +186,12 @@ struct auth_st {
     struct auth_parser parser;
     uint8_t status;
 
-    uint8_t user_len;
+    /* uint8_t user_len;
     char* username;
     uint8_t pass_len;
-    char* password;
+    char* password; */
+    struct username* username;
+    struct password* password;
 };
 
 /*
@@ -489,9 +491,8 @@ void socksv5_passive_accept(struct selector_key* key) {
     struct sockaddr_storage client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
     struct socks5* state = NULL;
-    selector_status status = SELECTOR_SUCCESS;
 
-    const int client = accept(key->fd, (struct sockaddr*)&client_addr, &client_addr_len);
+    int client = accept(key->fd, (struct sockaddr*)&client_addr, &client_addr_len);
 
     if (client == -1) {
         log(LOG_ERROR, "Fail to accept client connection");
@@ -773,9 +774,9 @@ static unsigned request_connect_to_origin(struct selector_key* key, struct reque
     int* fd = d->origin_fd;
     bool error = false;
 
-    // Para los logs
+    // TODO para los logs
     char* tmp = (char*)malloc(INET_ADDRSTRLEN * sizeof(char));
-    char* addr = inet_ntop(AF_INET, &d->request.dest_addr.ipv4.sin_addr, tmp, INET_ADDRSTRLEN);
+    const char* addr = inet_ntop(AF_INET, &d->request.dest_addr.ipv4.sin_addr, tmp, INET_ADDRSTRLEN);
 
     // Creamos el socket para conectarnos a origin
     *fd = socket(s->origin_domain, SOCK_STREAM, 0);
@@ -819,6 +820,8 @@ finally:
             *fd = -1;
         }
     }
+    // TODO para los logs
+    free(tmp);
     d->status = status;
     return REQUEST_CONNECTING;
 }
@@ -886,7 +889,7 @@ static unsigned request_connecting(struct selector_key* key) {
     socklen_t len = sizeof(error);
     unsigned ret = REQUEST_CONNECTING;
     struct socks5* s = ATTACHMENT(key);
-    struct request_st* d = &ATTACHMENT(key)->client.request;
+    // struct request_st* d = &ATTACHMENT(key)->client.request;
 
     if (getsockopt(*s->orig.conn.origin_fd, SOL_SOCKET, SO_ERROR, &error, &len) == 0) {
         if (selector_set_interest(key->s, *s->orig.conn.client_fd, OP_WRITE) != SELECTOR_SUCCESS) {
@@ -1073,9 +1076,11 @@ static void auth_init(const unsigned state, struct selector_key* key) {
     d->rb = &(s->read_buffer);
     d->wb = &(s->write_buffer);
     auth_parser_init(&d->parser);
-    d->user_len = &d->parser.user_len;
+    /* d->user_len = &d->parser.user_len;
     d->username = &d->parser.username;
     d->pass_len = &d->parser.pass_len;
+    d->password = &d->parser.password; */
+    d->username = &d->parser.username;
     d->password = &d->parser.password;
 }
 
@@ -1084,7 +1089,7 @@ static unsigned auth_process(struct auth_st* d) {
     unsigned ret = USERPASS_WRITE;
     uint8_t status = AUTH_SUCCESS;
 
-    if(!valid_user_and_password(d->username, d->password)){
+    if (!valid_user_and_password(d->username->user, d->password->pass)) {
         status = AUTH_FAIL;
     }
 
@@ -1120,7 +1125,6 @@ static unsigned auth_read(struct selector_key* key) {
     }
     return error ? ERROR : ret;
 }
-
 
 static unsigned auth_write(struct selector_key* key) {
 

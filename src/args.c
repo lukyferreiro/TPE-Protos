@@ -4,12 +4,13 @@
 #include <errno.h>
 #include <getopt.h>
 #include <limits.h> /* LONG_MIN et al */
+#include <logger.h>
 #include <stdio.h>  /* for printf */
 #include <stdlib.h> /* for exit */
 #include <string.h> /* memset */
-#include <logger.h>
 
 #include "args.h"
+#include "socks_utils.h"
 
 struct socks5_args socks5_args;
 
@@ -43,7 +44,10 @@ static void user(char* s, struct users* user) {
             exit(1);
         }
 
-        // TODO: chequear que el usuario no este repetido
+        if (valid_user_is_registerd(s)) {
+            fprintf(stderr, "Duplicate user specified\n");
+            exit(1);
+        }
 
         strcpy(user->name, s);
         strcpy(user->pass, p);
@@ -53,7 +57,7 @@ static void user(char* s, struct users* user) {
 static void version(void) {
     fprintf(stderr, "SOCKSv5 version: " DEFAULT_VERSION "\n"
                     "ITBA Protocolos de Comunicación 2022/2 -- Grupo 1\n"
-                    "ALFA PROTOCOL :) \n"); // TODO
+                    "ALFA PROTOCOL\n");
 }
 
 static void usage(const char* progname) {
@@ -103,14 +107,14 @@ void parse_args(const int argc, char** argv, struct socks5_args* args) {
                 break;
             case 'l':
                 // Si encontramos ':', voy a usar IPv6
-                if (strchr(optarg, ':') != NULL)
+                if (strchr(optarg, IDENTIFIER_OF_IPV6) != NULL)
                     args->socks_addr6 = optarg;
                 else
                     args->socks_addr = optarg;
                 break;
             case 'L':
                 // Si encontramos ':', voy a usar IPv6
-                if (strchr(optarg, ':') != NULL)
+                if (strchr(optarg, IDENTIFIER_OF_IPV6) != NULL)
                     args->mng_addr6 = optarg;
                 else
                     args->mng_addr = optarg;

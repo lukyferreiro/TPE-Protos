@@ -1,7 +1,6 @@
-// This is a personal academic project. Dear PVS-Studio, please check it.
+/* // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 
-/* Factory de ciertos parsers típicos */
 
 #include <ctype.h>
 #include <stdlib.h>
@@ -44,34 +43,34 @@ static void neq(struct parser_event* ret, const uint8_t c) {
     ret->data[0] = c;
 }
 
-/*
- * Para comparar "foo" (length 3) necesitamos 3 + 2 estados.
- * Los útimos dos, son el sumidero de comparación fallida, y
- * el estado donde se llegó a la comparación completa.
- *
- * static const struct parser_state_transition ST_0 [] =  {
- *   {.when = 'F',        .dest = 1,         .action1 = may_eq, },
- *   {.when = 'f',        .dest = 1,         .action1 = may_eq, },
- *   {.when = ANY,        .dest = NEQ,       .action1 = neq,},
- * };
- * static const struct parser_state_transition ST_1 [] =  {
- *   {.when = 'O',        .dest = 2,         .action1 = may_eq, },
- *   {.when = 'o',        .dest = 2,         .action1 = may_eq, },
- *   {.when = ANY,        .dest = NEQ,       .action1 = neq,},
- * };
- * static const struct parser_state_transition ST_2 [] =  {
- *   {.when = 'O',        .dest = EQ,        .action1 = eq, },
- *   {.when = 'o',        .dest = EQ,        .action1 = eq, },
- *   {.when = ANY,        .dest = NEQ,       .action1 = neq,},
- * };
- * static const struct parser_state_transition ST_EQ  (3) [] =  {
- *   {.when = ANY,        .dest = NEQ,       .action1 = neq,},
- * };
- * static const struct parser_state_transition ST_NEQ (4) [] =  {
- *   {.when = ANY,        .dest = NEQ,       .action1 = neq,},
- * };
- *
- */
+
+ // Para comparar "foo" (length 3) necesitamos 3 + 2 estados.
+ // Los útimos dos, son el sumidero de comparación fallida, y
+ // el estado donde se llegó a la comparación completa.
+ //
+ // static const struct parser_state_transition ST_0 [] =  {
+ //   {.when = 'F',        .dest = 1,         .action1 = may_eq, },
+ //   {.when = 'f',        .dest = 1,         .action1 = may_eq, },
+ //   {.when = ANY,        .dest = NEQ,       .action1 = neq,},
+ // };
+ // static const struct parser_state_transition ST_1 [] =  {
+ //   {.when = 'O',        .dest = 2,         .action1 = may_eq, },
+ //   {.when = 'o',        .dest = 2,         .action1 = may_eq, },
+ //   {.when = ANY,        .dest = NEQ,       .action1 = neq,},
+ // };
+ // static const struct parser_state_transition ST_2 [] =  {
+ //   {.when = 'O',        .dest = EQ,        .action1 = eq, },
+ //   {.when = 'o',        .dest = EQ,        .action1 = eq, },
+ //   {.when = ANY,        .dest = NEQ,       .action1 = neq,},
+ // };
+ // static const struct parser_state_transition ST_EQ  (3) [] =  {
+ //   {.when = ANY,        .dest = NEQ,       .action1 = neq,},
+ // };
+ // static const struct parser_state_transition ST_NEQ (4) [] =  {
+ //   {.when = ANY,        .dest = NEQ,       .action1 = neq,},
+ // };
+ //
+ //
 struct parser_definition parser_utils_strcmpi(const char* s) {
     const size_t n = strlen(s);
 
@@ -140,3 +139,4 @@ void parser_utils_strcmpi_destroy(const struct parser_definition* p) {
     free((void*)p->states);
     free((void*)p->states_n);
 }
+ */

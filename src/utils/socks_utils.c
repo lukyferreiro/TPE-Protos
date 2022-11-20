@@ -1,9 +1,10 @@
 #include "socks_utils.h"
 #include "args.h"
 #include "logger.h"
+#include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <sys/socket.h> 
+#include <sys/socket.h>
 
 struct socks5_args socks5_args;
 
@@ -79,11 +80,19 @@ int create_socket(struct socks5_args* args, addr_type addr_type) {
     return new_socket;
 }
 
-bool valid_user_and_password(char *user, char *pass) {
+bool valid_user_and_password(char* user, char* pass) {
     for (int i = 0; i < MAX_USERS; i++) {
-        if (strcmp(user, socks5_args.users[i].name) == 0 && strcmp(pass, socks5_args.users[i].pass) == 0){
+        if (strcmp(user, socks5_args.users[i].name) == 0 && strcmp(pass, socks5_args.users[i].pass) == 0) {
             return true;
         }
+    }
+    return false;
+}
+
+bool valid_user_is_registerd(char* user) {
+    for (int i = 0; i < MAX_USERS; i++) {
+        if (strcmp(user, socks5_args.users[i].name) == 0)
+            return true;
     }
     return false;
 }

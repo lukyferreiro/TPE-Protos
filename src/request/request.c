@@ -124,29 +124,28 @@ void request_parser_init(struct request_parser* p) {
 }
 
 enum request_state request_parser_feed(struct request_parser* p, const uint8_t b) {
-    enum request_state next;
     switch (p->state) {
         //Segun el estado en el que me encuentre, paso al siguiente
         case REQUEST_VERSION:
-            next = version(b, p);
+            p->state = version(b, p);
             break;
         case REQUEST_CMD:
-            next = cmd(b, p);
+            p->state = cmd(b, p);
             break;
         case REQUEST_RSV:
-            next = rsv(b, p);
+            p->state = rsv(b, p);
             break;
         case REQUEST_ATYP:
-            next = atyp(b, p);
+            p->state = atyp(b, p);
             break;
         case REQUEST_DSTADDR_FQDN:
-            next = dstaddr_fqdn(b, p);
+            p->state = dstaddr_fqdn(b, p);
             break;
         case REQUEST_DSTADDR:
-            next = dstaddr(b, p);
+            p->state = dstaddr(b, p);
             break;
         case REQUEST_DSTPORT:
-            next = dstport(b, p);
+            p->state = dstport(b, p);
             break;
         case REQUEST_DONE:
         case REQUEST_ERROR:
@@ -160,7 +159,7 @@ enum request_state request_parser_feed(struct request_parser* p, const uint8_t b
             break;
     }
 
-    return p->state = next;
+    return p->state;
 }
 
 enum request_state request_parser_consume(buffer* b, struct request_parser* p, bool* errored) {
@@ -238,7 +237,7 @@ int request_parser_marshall(buffer* b, const enum socks5_response_status status,
                             const union socks5_addr dest_addr,
                             const in_port_t dest_port) {
     size_t n;
-    int request_len = DEFAULT_REQUEST_LEN;
+    size_t request_len = DEFAULT_REQUEST_LEN;
     int dest_addr_size = 0;
     uint8_t* aux_dest_addr = NULL;
     uint8_t* buff = buffer_write_ptr(b, &n);

@@ -5,6 +5,7 @@
 
 #define MAX_USERS 10
 #define USER_PASSWORD_DELIMETER ':'
+#define IDENTIFIER_OF_IPV6 ':'
 
 #define DEFAULT_IPV4_ADDR_PROXY "0.0.0.0"
 #define DEFAULT_IPV6_ADDR_PROXY "0::0"

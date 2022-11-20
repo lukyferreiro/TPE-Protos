@@ -1,4 +1,4 @@
-#include <string.h>
+/* #include <string.h>
 #include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -45,3 +45,4 @@ int tcpClientSocket(const char *host, const char *service) {
 	freeaddrinfo(servAddr); 
 	return sock;
 }
+ */

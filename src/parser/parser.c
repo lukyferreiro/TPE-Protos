@@ -1,7 +1,5 @@
-// This is a personal academic project. Dear PVS-Studio, please check it.
+/* // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
-
-/* Pequeño motor para parsers/lexers. */
 
 #include <assert.h>
 #include <stdbool.h>
@@ -10,19 +8,19 @@
 
 #include "parser.h"
 
-/* CDT del parser */
+// CDT del parser 
 struct parser {
-    /** tipificación para cada caracter */
+    // tipificación para cada caracter 
     const unsigned* classes;
-    /** definición de estados */
+    // definición de estados 
     const struct parser_definition* def;
 
-    /* estado actual */
+    // estado actual 
     unsigned state;
 
-    /* evento que se retorna */
+    // evento que se retorna 
     struct parser_event e1;
-    /* evento que se retorna */
+    // evento que se retorna 
     struct parser_event e2;
 };
 
@@ -86,3 +84,4 @@ static const unsigned classes[0xFF] = {0x00};
 const unsigned* parser_no_classes(void) {
     return classes;
 }
+ */
