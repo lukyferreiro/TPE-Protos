@@ -60,7 +60,7 @@ struct alpha_manager {
 
 struct alpha_manager alpha_manager;
 
-void manager_receive(struct selector_key* key) {
+void manager_passive_accept(struct selector_key* key) {
     alpha_manager.client_addr_len = sizeof(alpha_manager.client_addr);
     alpha_manager.response_len = 0;
     memset(alpha_manager.buffer_read, 0, BUFFER_SIZE);

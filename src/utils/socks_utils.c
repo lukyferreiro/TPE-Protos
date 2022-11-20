@@ -11,15 +11,20 @@
 
 struct socks5_args socks5_args;
 
-int create_socket(struct socks5_args* args, addr_type addr_type) {
+int create_socket(struct socks5_args* args, addr_type addr_type, bool is_udp) {
 
     struct sockaddr_in addr;
     struct sockaddr_in6 addr_6;
+    char* udp_or_tcp = is_udp ? "UDP" : "TCP";
     int ip_version = (addr_type == ADDR_IPV4) ? AF_INET : AF_INET6;
-    int port = args->socks_port;
-    char* address4 = args->socks_addr;
-    char* address6 = args->socks_addr6;
-    int new_socket = socket(ip_version, SOCK_STREAM, IPPROTO_TCP);
+    char* addr_description = (addr_type == ADDR_IPV4) ? "IPv4" : "IPv6";
+    int type = is_udp ? SOCK_DGRAM : SOCK_STREAM;
+    int protocol = is_udp ? IPPROTO_UDP : IPPROTO_TCP;
+    char* address4 = is_udp ? socks5_args.mng_addr : socks5_args.socks_addr;
+    char* address6 = is_udp ? socks5_args.mng_addr6 : socks5_args.socks_addr6;
+    int port = is_udp ? socks5_args.mng_port : socks5_args.socks_port;
+
+    int new_socket = socket(ip_version, type, protocol);
 
     if (new_socket < 0) {
         log(LOG_ERROR, "Cannot create socket");
@@ -27,7 +32,7 @@ int create_socket(struct socks5_args* args, addr_type addr_type) {
     }
 
     // Setsockopt para IPv4
-    if (setsockopt(new_socket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0) {
+    if (!is_udp && setsockopt(new_socket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0) {
         log(LOG_ERROR, "Cannot set socket options");
     }
 
@@ -36,7 +41,7 @@ int create_socket(struct socks5_args* args, addr_type addr_type) {
         log(LOG_ERROR, "Cannot set socket options");
     }
 
-    log(INFO, "Listening on TCP port %d", port);
+    log(INFO, "Listening on %s port %d", udp_or_tcp,  port);
 
     if (addr_type == ADDR_IPV4) {
         memset(&addr, 0, sizeof(addr));
@@ -69,15 +74,12 @@ int create_socket(struct socks5_args* args, addr_type addr_type) {
         }
     }
 
-    if (listen(new_socket, MAX_PENDING_CONNECTIONS) < 0) {
+    if (!is_udp && listen(new_socket, MAX_PENDING_CONNECTIONS) < 0) {
         log(LOG_ERROR, "Cannot listen socket");
         close(new_socket);
         return -1;
     } else {
-        log(INFO, "Waiting for new %s SOCKSv5 connection on TCP socket with address %s and fd: %d \n",
-            addr_type == ADDR_IPV4 ? "IPv4" : "IPv6",
-            addr_type == ADDR_IPV4 ? address4 : address6,
-            new_socket);
+        log(INFO, "Opened %s %s socket (%d) for %s with address %s \n", udp_or_tcp, addr_description, new_socket, is_udp ? "manager" : "SOCKSv5", addr_type == ADDR_IPV4 ? address4 : address6);
     }
 
     return new_socket;

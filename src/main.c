@@ -8,11 +8,13 @@
  */
 #include "args.h"
 #include "buffer.h"
+#include "alpha_manager.h"
 #include "logger.h"
 #include "netutils.h"
 #include "selector.h"
 #include "socks5nio.h"
 #include "socks_utils.h"
+#include "statistics_utils.h"
 #include <errno.h>
 #include <limits.h>
 #include <netinet/in.h>
@@ -38,7 +40,6 @@ static void sigterm_handler(const int signal) {
 }
 
 int main(const int argc, char** argv) {
-
     // No tenemos nada que leer de stdin
     close(STDIN_FILENO);
 
@@ -49,12 +50,16 @@ int main(const int argc, char** argv) {
     int fd = -1;
     int fds_socks5[DEFAULT_FDS_SIZE];
     int fds_socks5_size = 0;
+    int fds_mng[DEFAULT_FDS_SIZE];
+    int fds_mng_size = 0;
+
     parse_args(argc, argv, &socks5_args);
+    init_stats(&socks5_stats);
 
     //---------------------------------------------------------------
     // Creamos los sockets pasivos IPv4 e IPv6 para el proxy SOCKSv5
     //---------------------------------------------------------------
-    fd = create_socket(&socks5_args, ADDR_IPV4);
+    fd = create_socket(&socks5_args, ADDR_IPV4, false);
     if (fd < 0) {
         log(DEBUG, "Cannot create IPv4 passive socket of SOCKSv5");
     } else if (selector_fd_set_nio(fd) == -1) {
@@ -65,7 +70,7 @@ int main(const int argc, char** argv) {
         fds_socks5[fds_socks5_size++] = fd;
     }
 
-    fd = create_socket(&socks5_args, ADDR_IPV6);
+    fd = create_socket(&socks5_args, ADDR_IPV6, false);
     if (fd < 0) {
         log(DEBUG, "Cannot create IPv6 passive socket of SOCKSv5");
     } else if (selector_fd_set_nio(fd) == -1) {
@@ -77,9 +82,39 @@ int main(const int argc, char** argv) {
     }
 
     if (fds_socks5_size == 0) {
-        log(FATAL, "Cannot create none socket for SOCKSv5 server");
+        log(FATAL, "Cannot create any socket for SOCKSv5 server");
     }
-    //--------------------------------------------------------------
+
+    //---------------------------------------------------------------
+    // Creamos los sockets pasivos IPv4 e IPv6 para el administador
+    //---------------------------------------------------------------
+    fd = create_socket(&socks5_args, ADDR_IPV4, true);
+    if (fd < 0) {
+        log(DEBUG, "Cannot create IPv4 passive socket for manager");
+    } else if (selector_fd_set_nio(fd) == -1) {
+        perror("selector_fd_set_nio");
+        err_msg = "Error getting manager server IPv4 socket as non blocking";
+        goto finally;
+    } else {
+        fds_mng[fds_mng_size++] = fd;
+    }
+
+    fd = create_socket(&socks5_args, ADDR_IPV6, true);
+    if (fd < 0) {
+        log(DEBUG, "Cannot create IPv6 passive socket for manager");
+    } else if (selector_fd_set_nio(fd) == -1) {
+        perror("selector_fd_set_nio");
+        err_msg = "Error getting manager IPv6 socket as non blocking";
+        goto finally;
+    } else {
+        fds_mng[fds_mng_size++] = fd;
+    }
+
+    if (fds_mng_size == 0) {
+        log(FATAL, "Cannot create any socket for manager");
+    }
+
+    //---------------------------------------------------------------
 
     // Registrar sigterm es útil para terminar el programa normalmente.
     signal(SIGTERM, sigterm_handler);
@@ -104,6 +139,9 @@ int main(const int argc, char** argv) {
         goto finally;
     }
 
+    //----------------------------------------------
+    // Registramos los sockets del servidor SOCKSv5
+    //----------------------------------------------
     const struct fd_handler socksv5 = {
         .handle_read = socksv5_passive_accept,
         .handle_write = NULL,
@@ -114,6 +152,23 @@ int main(const int argc, char** argv) {
         ss = selector_register(selector, fds_socks5[i], &socksv5, OP_READ, NULL);
         if (ss != SELECTOR_SUCCESS) {
             err_msg = "Error registering in selector an fd of SOCKSv5";
+            goto finally;
+        }
+    }
+
+    //----------------------------------------------
+    // Registramos los sockets del administrador
+    //----------------------------------------------
+    const struct fd_handler manager = {
+        .handle_read = manager_passive_accept,
+        .handle_write = NULL,
+        .handle_close = NULL, // nada que liberar
+    };
+
+    for (int i = 0; i < fds_mng_size; i++) {
+        ss = selector_register(selector, fds_mng[i], &manager, OP_READ, NULL);
+        if (ss != SELECTOR_SUCCESS) {
+            err_msg = "Error registering server manager fd";
             goto finally;
         }
     }
@@ -148,6 +203,9 @@ finally:
 
     for (int i = 0; i < fds_socks5_size; i++) {
         close(fds_socks5[i]);
+    }
+    for (int i = 0; i < fds_mng_size; i++) {
+        close(fds_mng[i]);
     }
 
     socksv5_pool_destroy();

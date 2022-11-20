@@ -83,7 +83,7 @@ void parse_args(const int argc, char** argv, struct socks5_args* args) {
     args->socks_port = DEFAULT_PORT_SOCKS5;
 
     args->mng_addr = DEFAULT_IPV4_ADDR_MNG;
-    args->mng_addr = DEFAULT_IPV6_ADDR_MNG;
+    args->mng_addr6 = DEFAULT_IPV6_ADDR_MNG;
     args->mng_port = DEFAULT_PORT_MNG;
 
     char* token = getenv(ALPHA_TKN);

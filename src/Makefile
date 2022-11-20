@@ -3,7 +3,7 @@ GCC = gcc
 #-pedantic -pedantic-errors
 GCCFLAGS = -g --std=c11 -O3 -Wall -Wextra -Werror -fsanitize=address -D_POSIX_C_SOURCE=200112L -Wno-unused-parameter -Wno-implicit-fallthrough $(INCLUDE)
 LDFLAGS = -pthread -lrt
-UTILS = ./logger/logger.c ./utils/util.c ./buffer/buffer.c ./hello/hello.c ./auth/auth.c ./selector/selector.c ./socks5/socks5nio.c ./stm/stm.c ./args.c ./request/request.c ./utils/socks_utils.c ./manager_protocol/alpha.c ./manager_protocol/alpha_manager.c ./pop3/sniffer.c
+UTILS = ./logger/logger.c ./utils/util.c ./buffer/buffer.c ./hello/hello.c ./auth/auth.c ./selector/selector.c ./socks5/socks5nio.c ./stm/stm.c ./args.c ./request/request.c ./utils/socks_utils.c ./manager_protocol/alpha.c ./manager_protocol/alpha_manager.c ./pop3/sniffer.c ./utils/statistics_utils.c
 
 all: main
 

@@ -7,7 +7,7 @@
 
 #define MAX_PENDING_CONNECTIONS 20
 
-int create_socket(struct socks5_args* args, addr_type addr_type);
+int create_socket(struct socks5_args* args, addr_type addr_type, bool is_udp);
 bool valid_user_and_password(char* user, char* pass);
 bool valid_user_is_registered(char* user);
 bool server_check_if_full();

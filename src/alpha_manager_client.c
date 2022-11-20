@@ -181,7 +181,7 @@ int main(const int argc, char** argv) {
     while (!done) {
         command = NULL;
         param = NULL;
-        printf("Alpha manager client >>$ ");
+        printf("Alpha manager client $ ");
 
         memset(user_input, 0, USER_INPUT_SIZE);
         aux = fgets(user_input, USER_INPUT_SIZE, stdin);
