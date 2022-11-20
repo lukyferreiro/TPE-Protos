@@ -549,8 +549,6 @@ static void hello_read_init(const unsigned state, struct selector_key* key) {
     d->rb = &(s->read_buffer);
     d->wb = &(s->write_buffer);
     d->parser.data = &d->method;
-    /* d->parser.on_authentication_method = on_hello_method;
-    hello_parser_init(&d->parser); */
     *((uint8_t*)d->parser.data) = METHOD_NO_ACCEPTABLE_METHODS;
     hello_parser_init(&d->parser, on_hello_method);
 }
@@ -615,9 +613,11 @@ static unsigned hello_write(struct selector_key* key) {
         buffer_read_adv(d->wb, n);
         if (!buffer_can_read(d->wb)) {
             if (selector_set_interest_key(key, OP_READ) == SELECTOR_SUCCESS) {
-
-                // TODO: chquear si la auth esta prendida, si esta prendida transicionar al estado AUTH_READ
-                ret = REQUEST_READ;
+                if (d->method == METHOD_AUTHENTICATION) {
+                    ret = USERPASS_READ;
+                } else {
+                    ret = REQUEST_READ;
+                }
             } else {
                 ret = ERROR;
             }
@@ -1073,16 +1073,40 @@ static void auth_init(const unsigned state, struct selector_key* key) {
     d->wb = &(s->write_buffer);
     auth_parser_init(&d->parser);
     d->user_len = &d->parser.user_len;
-    d->username = &d->parser.username;
+    strcpy(d->username, &d->parser.username);
     d->pass_len = &d->parser.pass_len;
-    d->password = &d->parser.password;
+    strcpy(d->password, &d->parser.password);
 }
 
 static unsigned auth_process(struct auth_st* d) {
 }
 
 static unsigned auth_read(struct selector_key* key) {
+    struct auth_st* d = &ATTACHMENT(key)->client.auth;
+    buffer* b = d->rb;
+    unsigned ret = USERPASS_READ;
+    bool error = false;
+
+    size_t count;
+    uint8_t* ptr = buffer_write_ptr(b, &count);
+    ssize_t n = recv(key->fd, ptr, count, 0);
+
+    if (n > 0) {
+        buffer_write_adv(b, n);
+        if (auth_parser_consume(b, &d->parser, &error)) {
+            if (selector_set_interest_key(key, OP_WRITE) == SELECTOR_SUCCESS) {
+                ret = auth_process(d);
+            } else {
+                error = true;
+                ret = ERROR;
+            }
+        }
+    } else {
+        ret = ERROR;
+    }
+    return error ? ERROR : ret;
 }
+
 
 static unsigned auth_write(struct selector_key* key) {
 }
