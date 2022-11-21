@@ -104,10 +104,6 @@ bool valid_user_is_registered(char* user) {
     return false;
 }
 
-bool server_check_if_full() {
-    return socks5_args.nusers == MAX_USERS;
-}
-
 void add_user(char* user, char* pass) {
     bool done = false;
     for (int i = 0; i < MAX_USERS && done == false; i++) {

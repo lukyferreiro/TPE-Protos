@@ -103,7 +103,6 @@ void manager_passive_accept(struct selector_key* key) {
 }
 
 static bool check_admin_token(struct alpha_req alpha_req) {
-    logger(DEBUG, "%d y %d", htonl(alpha_req.token), htonl(socks5_args.mng_token));
     if (alpha_req.token != socks5_args.mng_token)
         return false;
     return true;
@@ -230,10 +229,12 @@ static void get_is_auth_handler(alpha_res* alpha_res, alpha_req alpha_req) {
 
 static void post_add_user_handler(alpha_res* alpha_res, alpha_req alpha_req) {
     char* username = alpha_req.data.string;
-    char* password;
-    password = strchr(username, USER_PASSWORD_DELIMETER);
+    logger(DEBUG, "%s", username);
+    char* password = strchr(username, USER_PASSWORD_DELIMETER);
     *password++ = 0;
-    if (!server_check_if_full()) {
+    logger(DEBUG, "%d", socks5_args.nusers);
+    logger(DEBUG, "%s:%s", username, password);
+    if (socks5_args.nusers != MAX_USERS) {
         if (!valid_user_is_registered(username)) {
             logger(INFO, "User '%s' was added", username);
             add_user(username, password);

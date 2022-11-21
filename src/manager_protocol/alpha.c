@@ -1,4 +1,5 @@
 #include "alpha.h"
+#include "logger.h"
 #include "socks_utils.h"
 #include <arpa/inet.h>
 #include <stdlib.h>
@@ -13,6 +14,7 @@ alpha_data cmd_to_req_data_type(unsigned alpha_cmd) {
     switch (alpha_cmd) {
         case GET_LIST:
             return UINT_8_DATA;
+        case POST_ADD_USER:
         case POST_DEL_USER:
             return STRING_DATA;
         case GET_HIST_CONN:
@@ -20,7 +22,6 @@ alpha_data cmd_to_req_data_type(unsigned alpha_cmd) {
         case GET_BYTES_TRANSF:
         case GET_IS_SNIFF_ENABLED:
         case GET_IS_AUTH_ENABLED:
-        case POST_ADD_USER:
         case POST_ENABLE_SNIFF:
         case POST_DISABLE_SNIFF:
         case POST_ENABLE_AUTH:
