@@ -16,12 +16,12 @@
 #include "socks_utils.h"
 #include "statistics_utils.h"
 #include "stm.h"
+#include "util.h"
 #include <arpa/inet.h>
 #include <assert.h> // assert
 #include <errno.h>
 #include <netdb.h>
 #include <pthread.h>
-#include "util.h"
 #include <stdio.h>
 #include <stdlib.h> // malloc
 #include <string.h> // memset
@@ -36,7 +36,7 @@ static const unsigned max_pool = 50; // Tamaño maximo
 static unsigned pool_size = 0;       // Tamaño actual
 static struct socks5* pool = 0;      // Pool propiamente dicho
 
-extern struct socks5_args socks5_args; 
+extern struct socks5_args socks5_args;
 extern struct socks5_stats socks5_stats;
 
 /** Maquina de estados general */
@@ -103,7 +103,7 @@ enum socks_v5state {
      *     - OP_NOOP sobre client_fd (espera un evento de que la tarea bloquenate termino)
      *
      * Transiciones:
-     *   - REQUEST_CONNECTING   si se lorga resolver el nombre y se puede inicar la conexion al origin server
+     *   - REQUEST_CONNECTING   si se lofra resolver el nombre y se puede inicar la conexion al origin server
      *   - REQUEST_WRITE        en otro caso
      */
     REQUEST_RESOLV,
@@ -494,6 +494,7 @@ static void socksv5_done(struct selector_key* key) {
     }
     dec_current_connections();
     logger(DEBUG, "Connection closed");
+    logger(DEBUG, "-----------------------------------------------------");
 }
 
 void socksv5_passive_accept(struct selector_key* key) {
@@ -508,7 +509,7 @@ void socksv5_passive_accept(struct selector_key* key) {
         goto fail;
     }
 
-    if(client > 1023){
+    if (client > 1023) {
         logger(LOG_ERROR, "Fail to accept client connection with fd %d (too big)", client);
         goto fail;
     }
@@ -533,6 +534,7 @@ void socksv5_passive_accept(struct selector_key* key) {
     }
 
     inc_current_connections();
+    logger(DEBUG, "-----------------------------------------------------");
     logger(DEBUG, "New connection created from %s in socket %d", printSocketAddress((struct sockaddr*)&client_addr), client);
     return;
 
@@ -791,10 +793,6 @@ static unsigned request_connect_to_origin(struct selector_key* key, struct reque
     int* fd = d->origin_fd;
     bool error = false;
 
-    // TODO para los logs
-    char* tmp = (char*)malloc(INET_ADDRSTRLEN * sizeof(char));
-    const char* addr = inet_ntop(AF_INET, &d->request.dest_addr.ipv4.sin_addr, tmp, INET_ADDRSTRLEN);
-
     // Creamos el socket para conectarnos a origin
     *fd = socket(s->origin_domain, SOCK_STREAM, 0);
     if (*fd == -1) {
@@ -809,7 +807,7 @@ static unsigned request_connect_to_origin(struct selector_key* key, struct reque
     int aux = connect(*fd, (const struct sockaddr*)&s->origin_addr, s->origin_addr_len);
     if (aux == -1) {
         if (errno == EINPROGRESS) {
-            logger(INFO, "Connect to %s in progress", addr);
+            logger(INFO, "Connect to %s in progress by client %d", printSocketAddress((struct sockaddr*)&s->origin_addr), d->client_fd);
             if (selector_set_interest_key(key, OP_NOOP) != SELECTOR_SUCCESS) {
                 error = true;
                 goto finally;
@@ -820,7 +818,7 @@ static unsigned request_connect_to_origin(struct selector_key* key, struct reque
             }
             s->references += 1;
         } else {
-            logger(INFO, "Fail connecting to %s ", addr);
+            logger(INFO, "Fail connecting to %s by client %d", printSocketAddress((struct sockaddr*)&s->origin_addr), d->client_fd);
             status = errno_to_socks(errno);
             error = true;
             goto finally;
@@ -837,8 +835,6 @@ finally:
             *fd = -1;
         }
     }
-    // TODO para los logs
-    free(tmp);
     d->status = status;
     return REQUEST_CONNECTING;
 }
@@ -870,18 +866,33 @@ static unsigned request_read(struct selector_key* key) {
 static unsigned request_resolv_done(struct selector_key* key) {
     struct socks5* s = ATTACHMENT(key);
     struct request_st* d = &s->client.request;
+    struct addrinfo* ailist;
+    struct addrinfo* aip;
 
-    if (s->origin_resolution == 0) {
+    ailist = s->origin_resolution;
+    for (aip = ailist; aip != NULL; aip = aip->ai_next) {
+        logger(DEBUG, "family=%s, type=%s, protocol=%s, address=%s flags=\"%s\"", printFamily(aip),
+               printType(aip), printProtocol(aip), printAddressPort(aip, aip->ai_addr), printFlags(aip));
+    }
+
+    if (s->origin_resolution == NULL) {
         logger(INFO, "Resolution failed");
         d->status = SOCKS5_STATUS_HOST_UNREACHABLE;
-        return REQUEST_WRITE;
+        int aux = request_parser_marshall(d->wb, d->status, d->request.dest_addr_type, d->request.dest_addr, d->request.dest_port);
+        if (aux != -1) {
+            if (selector_set_interest_key(key, OP_WRITE) != SELECTOR_SUCCESS) {
+                return ERROR;
+            }
+            s->error = 1;
+            return REQUEST_WRITE;
+        } else {
+            return ERROR;
+        }
     } else {
         logger(DEBUG, "Resolution success");
         s->origin_domain = s->origin_resolution->ai_family;
         s->origin_addr_len = s->origin_resolution->ai_addrlen;
         memcpy(&s->origin_addr, s->origin_resolution->ai_addr, s->origin_resolution->ai_addrlen);
-        freeaddrinfo(s->origin_resolution);
-        s->origin_resolution = 0;
     }
 
     return request_connect_to_origin(key, d);
@@ -907,7 +918,7 @@ static unsigned request_connecting(struct selector_key* key) {
     socklen_t len = sizeof(error);
     unsigned ret = REQUEST_CONNECTING;
     struct socks5* s = ATTACHMENT(key);
-    // struct request_st* d = &ATTACHMENT(key)->client.request;
+    struct request_st* d = &ATTACHMENT(key)->client.request;
 
     if (getsockopt(*s->orig.conn.origin_fd, SOL_SOCKET, SO_ERROR, &error, &len) == 0) {
         if (selector_set_interest(key->s, *s->orig.conn.client_fd, OP_WRITE) != SELECTOR_SUCCESS) {
@@ -917,6 +928,18 @@ static unsigned request_connecting(struct selector_key* key) {
             logger(INFO, "Connection to origin success");
             s->client.request.status = SOCKS5_STATUS_SUCCEED;
         } else {
+            // Si no me pude conectar con el primera resolucion de nombre
+            // Empiezo a probar con las siguientes (si es que hay)
+            if (s->origin_resolution_current != NULL) {
+                s->origin_resolution_current = s->origin_resolution_current->ai_next;
+                if (s->origin_resolution_current != NULL) {
+                    logger(INFO, "Retrying connection");
+                    s->origin_domain = s->origin_resolution_current->ai_family;
+                    s->origin_addr_len = s->origin_resolution_current->ai_addrlen;
+                    memcpy(&s->origin_addr, s->origin_resolution_current->ai_addr, s->origin_resolution_current->ai_addrlen);
+                    return request_connect_to_origin(key, d);
+                }
+            }
             logger(LOG_ERROR, "Connection to origin failed");
             s->client.request.status = errno_to_socks(error);
             if (selector_set_interest_key(key, OP_NOOP) != SELECTOR_SUCCESS) {
@@ -924,6 +947,9 @@ static unsigned request_connecting(struct selector_key* key) {
                 s->client.request.status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
             }
         }
+
+        freeaddrinfo(s->origin_resolution);
+        s->origin_resolution = 0;
 
         int ocupped_bytes = request_parser_marshall(s->orig.conn.wb, *s->orig.conn.status, s->client.request.request.dest_addr_type,
                                                     s->client.request.request.dest_addr, s->client.request.request.dest_port);
@@ -952,21 +978,19 @@ static unsigned request_write(struct selector_key* key) {
     uint8_t* ptr = buffer_read_ptr(b, &count);
     ssize_t n = send(key->fd, ptr, count, MSG_NOSIGNAL);
 
-    if (n == -1) {
+    if (n == -1 || s->error == 1) {
+        logger(LOG_ERROR, "Failed to send() in request write");
         ret = ERROR;
     } else {
         buffer_read_adv(b, n);
         add_bytes_transferred(n);
         if (!buffer_can_read(b)) {
-            //if (d->status == SOCKS5_STATUS_SUCCEED) {
-                ret = COPY;
-                if (selector_set_interest_key(key, OP_READ) != SELECTOR_SUCCESS) {
-                    ret = ERROR;
-                }
-            //}
+            ret = COPY;
+            if (selector_set_interest_key(key, OP_READ) != SELECTOR_SUCCESS) {
+                ret = ERROR;
+            }
         }
     }
-
     return ret;
 }
 
@@ -1051,6 +1075,10 @@ static unsigned copy_read(struct selector_key* key) {
     buffer* b = d->rb;
     unsigned ret = COPY;
 
+    if (!buffer_can_write(b)) {
+        return COPY;
+    }
+
     size_t size;
     uint8_t* ptr = buffer_write_ptr(b, &size);
     ssize_t n = recv(key->fd, ptr, size, 0);
@@ -1084,10 +1112,14 @@ static unsigned copy_write(struct selector_key* key) {
     buffer* b = d->wb;
     unsigned ret = COPY;
 
+    if (!buffer_can_read(b)) {
+        return COPY;
+    }
+
     size_t size;
     uint8_t* ptr = buffer_read_ptr(b, &size);
     ssize_t n = send(key->fd, ptr, size, MSG_NOSIGNAL);
-    if (n == -1) {
+    if (n <= 0) {
         shutdown(*d->fd, SHUT_WR);
         d->duplex &= ~OP_WRITE;
         if (*d->other->fd != -1) {

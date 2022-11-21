@@ -94,7 +94,7 @@ const char* printAddressPort(const struct addrinfo* aip, struct sockaddr* addres
             addrAux = "unknown";
         strcpy(buff, addrAux);
         if (sinp->sin_port != 0) {
-            sprintf(buff + strlen(buff), ": %d", ntohs(sinp->sin_port));
+            sprintf(buff + strlen(buff), ":%d", ntohs(sinp->sin_port));
         }
     } else if (aip->ai_family == AF_INET6) {
         struct sockaddr_in6* sinp;
