@@ -19,6 +19,7 @@
 #define USER_INPUT_SIZE 100
 #define TIMEOUT_SEC 5
 #define MAX_ATTEMPS 3
+#define CANT_COMMANDS 12
 
 static bool done = false;
 static struct alpha_req alpha_manager_req;
@@ -32,6 +33,7 @@ static void sigterm_handler(const int signal) {
 }
 
 static void help();
+static void print_white_spaces(int start, int end);
 static bool header_builder_with_param(struct alpha_req* alpha_req, unsigned cmd, char* param);
 static bool header_builder_no_param(struct alpha_req* alpha_req, unsigned cmd);
 static void response_handler(struct alpha_req alpha_req, struct alpha_res alpha_res, char* message);
@@ -54,57 +56,57 @@ alpha_shell_command alpha_shell_commands[] = {
     {.name = "hist",
      .param_name = "",
      .nparams = 0,
-     .description = "Returns the amount of historic connections over the server",
-     .on_success_message = "Amount of historic connections"},
+     .description = "Number of historic connections over the server",
+     .on_success_message = "Number of historic connections"},
     {.name = "conc",
      .param_name = "",
      .nparams = 0,
-     .description = "Returns the amount of concurrent connections over the server",
-     .on_success_message = "Amount of concurrent connections"},
+     .description = "Number of concurrent connections over the server",
+     .on_success_message = "Number of concurrent connections"},
     {.name = "bytes",
      .param_name = "",
      .nparams = 0,
-     .description = "Returns the amount of bytes transfered over the server",
+     .description = "Amount of bytes transfered over the server",
      .on_success_message = "Amount of bytes transfered"},
     {.name = "checksniff",
      .param_name = "",
      .nparams = 0,
-     .description = "Returns the status of the password disector over the server",
+     .description = "Delivers status of the password disector over the server",
      .on_success_message = "POP3 credential sniffer status"},
     {.name = "checkauth",
      .param_name = "",
      .nparams = 0,
-     .description = "Returns the status of authentication over the server",
+     .description = "Delivers status of authentication over the server",
      .on_success_message = "Authentication status"},
     {.name = "add",
      .param_name = "user:pass",
      .nparams = 1,
-     .description = "Command to add a user",
+     .description = "Run this to add a user",
      .on_success_message = "User added successfully"},
     {.name = "del",
      .param_name = "user",
      .nparams = 1,
-     .description = "Command to delete a user",
+     .description = "Run this to delete a user",
      .on_success_message = "User deleted successfully"},
     {.name = "sniff-on",
      .param_name = "",
      .nparams = 0,
-     .description = "Command to enable POP3 credential sniffer over the server",
+     .description = "Run this to enable POP3 credential sniffer over the server",
      .on_success_message = "POP3 credential sniffer enabled!"},
     {.name = "sniff-off",
      .param_name = "",
      .nparams = 0,
-     .description = "Command to disable POP3 credential sniffer over the server",
+     .description = "Run this to disable POP3 credential sniffer over the server",
      .on_success_message = "POP3 credential sniffer disabled!"},
     {.name = "auth-on",
      .param_name = "",
      .nparams = 0,
-     .description = "Command to enable authentication over the server",
+     .description = "Run this to enable authentication over the server",
      .on_success_message = "Authentication enabled!"},
     {.name = "auth-off",
      .param_name = "",
      .nparams = 0,
-     .description = "Command to disable authentication over the server",
+     .description = "Run this to disable authentication over the server",
      .on_success_message = "Authentication disabled!"},
 };
 
@@ -278,7 +280,36 @@ int main(const int argc, char** argv) {
 }
 
 void help() {
-    return;
+    printf("|     NAME   |        SYNOPSIS     |                               "
+              "DESCRIPTION                                |\n");
+    printf("|------------+---------------------+--------------------------------"
+           "------------------------------------------|\n");
+    for (int i = 0; i < CANT_COMMANDS; i++) {
+        printf("| ");
+        printf("%s", alpha_shell_commands[i].name);
+        print_white_spaces(strlen(alpha_shell_commands[i].name), 10);
+
+        printf(" | ");
+        printf("%s", alpha_shell_commands[i].param_name);
+        print_white_spaces(strlen(alpha_shell_commands[i].param_name), 19);
+
+        printf(" | ");
+        printf("%s", alpha_shell_commands[i].description);
+        print_white_spaces(strlen(alpha_shell_commands[i].description), 72);
+        printf(" | ");
+        /*print_usage(alpha_shell_commands[i].param_name);
+        printf(" | ");
+        print_description(alpha_shell_commands[i].description);
+        printf(" |\n"); */
+        printf("        |------------+---------------------+--------------------------------"
+           "------------------------------------------|\n");
+    }
+}
+
+static void print_white_spaces(int start, int end){
+    for (int j = start; j < end; j++) {
+            printf(" ");
+        }
 }
 
 static bool header_builder_no_param(struct alpha_req* alpha_req, unsigned cmd) {
