@@ -7,12 +7,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MAX_BUFF 256
+
 const char* printFamily(struct addrinfo* aip) {
     switch (aip->ai_family) {
         case AF_INET:
-            return "inet";
+            return "IPv4";
         case AF_INET6:
-            return "inet6";
+            return "IPv6";
         case AF_UNIX:
             return "unix";
         case AF_UNSPEC:
@@ -52,55 +54,67 @@ const char* printProtocol(struct addrinfo* aip) {
     }
 }
 
-void printFlags(struct addrinfo* aip) {
-    printf("flags");
+const char* printFlags(struct addrinfo* aip) {
+    static char buff[MAX_BUFF];
+    strcpy(buff, "flags");
     if (aip->ai_flags == 0) {
-        printf(" 0");
+        strcat(buff, " 0");
     } else {
         if (aip->ai_flags & AI_PASSIVE)
-            printf(" passive");
+            strcat(buff, " passive");
         if (aip->ai_flags & AI_CANONNAME)
-            printf(" canon");
+            strcat(buff, " canon");
         if (aip->ai_flags & AI_NUMERICHOST)
-            printf(" numhost");
+            strcat(buff, " numhost");
         if (aip->ai_flags & AI_NUMERICSERV)
-            printf(" numserv");
+            strcat(buff, " numserv");
         if (aip->ai_flags & AI_V4MAPPED)
-            printf(" v4mapped");
+            strcat(buff, " v4mapped");
         if (aip->ai_flags & AI_ALL)
-            printf(" all");
+            strcat(buff, " all");
     }
+
+    return buff;
 }
 
-char* printAddressPort(const struct addrinfo* aip, char addr[]) {
+const char* printAddressPort(const struct addrinfo* aip, struct sockaddr* address) {
+    if (address == NULL) {
+        return "unknown address";
+    }
+
+    static char buff[MAX_BUFF];
     char abuf[INET6_ADDRSTRLEN];
     const char* addrAux;
 
     if (aip->ai_family == AF_INET) {
         struct sockaddr_in* sinp;
-        sinp = (struct sockaddr_in*)aip->ai_addr;
+        sinp = (struct sockaddr_in*)address;
         addrAux = inet_ntop(AF_INET, &sinp->sin_addr, abuf, INET_ADDRSTRLEN);
         if (addrAux == NULL)
             addrAux = "unknown";
-        strcpy(addr, addrAux);
+        strcpy(buff, addrAux);
         if (sinp->sin_port != 0) {
-            sprintf(addr + strlen(addr), ": %d", ntohs(sinp->sin_port));
+            sprintf(buff + strlen(buff), ": %d", ntohs(sinp->sin_port));
         }
     } else if (aip->ai_family == AF_INET6) {
         struct sockaddr_in6* sinp;
-        sinp = (struct sockaddr_in6*)aip->ai_addr;
+        sinp = (struct sockaddr_in6*)address;
         addrAux = inet_ntop(AF_INET6, &sinp->sin6_addr, abuf, INET6_ADDRSTRLEN);
         if (addrAux == NULL)
             addrAux = "unknown";
-        strcpy(addr, addrAux);
+        strcpy(buff, addrAux);
         if (sinp->sin6_port != 0)
-            sprintf(addr + strlen(addr), ": %d", ntohs(sinp->sin6_port));
+            sprintf(buff + strlen(buff), ": %d", ntohs(sinp->sin6_port));
     } else
-        strcpy(addr, "unknown");
-    return addr;
+        strcpy(buff, "unknown");
+    return buff;
 }
 
-int printSocketAddress(const struct sockaddr* address, char* addrBuffer) {
+const char* printSocketAddress(const struct sockaddr* address) {
+    if (address == NULL)
+        return "unknown address";
+
+    static char buff[MAX_BUFF];
     void* numericAddress;
     in_port_t port;
 
@@ -114,17 +128,17 @@ int printSocketAddress(const struct sockaddr* address, char* addrBuffer) {
             port = ntohs(((struct sockaddr_in6*)address)->sin6_port);
             break;
         default:
-            strcpy(addrBuffer, "[unknown type]"); // Unhandled type
+            strcpy(buff, "[unknown type]"); // Unhandled type
             return 0;
     }
     // Convert binary to printable address
-    if (inet_ntop(address->sa_family, numericAddress, addrBuffer, INET6_ADDRSTRLEN) == NULL)
-        strcpy(addrBuffer, "[invalid address]");
+    if (inet_ntop(address->sa_family, numericAddress, buff, INET6_ADDRSTRLEN) == NULL)
+        strcpy(buff, "[invalid address]");
     else {
         if (port != 0)
-            sprintf(addrBuffer + strlen(addrBuffer), ":%u", port);
+            sprintf(buff + strlen(buff), ":%u", port);
     }
-    return 1;
+    return buff;
 }
 
 int sockAddrsEqual(const struct sockaddr* addr1, const struct sockaddr* addr2) {

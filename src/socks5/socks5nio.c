@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <netdb.h>
 #include <pthread.h>
+#include "util.h"
 #include <stdio.h>
 #include <stdlib.h> // malloc
 #include <string.h> // memset
@@ -501,9 +502,15 @@ void socksv5_passive_accept(struct selector_key* key) {
     int client = accept(key->fd, (struct sockaddr*)&client_addr, &client_addr_len);
 
     if (client == -1) {
-        log(LOG_ERROR, "Fail to accept client connection");
+        log(LOG_ERROR, "Fail to accept client connection with fd %d (negative value)", client);
         goto fail;
     }
+
+    if(client > 1023){
+        log(LOG_ERROR, "Fail to accept client connection with fd %d (too big)", client);
+        goto fail;
+    }
+
     if (selector_fd_set_nio(client) == -1) {
         log(LOG_ERROR, "Fail to set non block");
         goto fail;
@@ -523,7 +530,7 @@ void socksv5_passive_accept(struct selector_key* key) {
         goto fail;
     }
 
-    log(DEBUG, "New connection created");
+    log(DEBUG, "New connection created from %s in socket %d", printSocketAddress((struct sockaddr*)&client_addr), client);
     return;
 
 fail:
