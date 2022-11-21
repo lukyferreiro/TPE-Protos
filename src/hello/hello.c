@@ -79,11 +79,11 @@ char* hello_parser_error(struct hello_parser* p) {
         case HELLO_VERSION:
         case HELLO_NMETHODS:
         case HELLO_METHODS:
-            ret = "No error";
+            ret = "[HELLO_PARSER] No error";
             break;
         case HELLO_ERROR_UNSUPPORTED_VERSION:
         default:
-            ret = "Unsupported version";
+            ret = "[HELLO_PARSER] Unsupported version";
             break;
     }
     return ret;

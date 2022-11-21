@@ -44,14 +44,14 @@ enum sniffer_state sniffer_parser_feed(sniffer_parser* p, const uint8_t b);
  * Por cada elemento del buffer llama a 'sniffer_parser_feed' hasta que
  * el parseo se encuentra completo o se requieren mas bytes.
  */
-enum sniffer_state sniffer_parser_consume(struct sniffer_parser* p);
+enum sniffer_state sniffer_parser_consume(struct sniffer_parser* p, bool* errored);
 
 /**
  * Permite distinguir a quien usa 'sniffer_parser_feed' si debe seguir
  * enviando caracters o no.
  * En caso de haber terminado permite tambien saber si se debe a un error
  */
-bool sniffer_parser_is_done(struct sniffer_parser* p);
+bool sniffer_parser_is_done(struct sniffer_parser* p, bool* errored);
 
 /**
  * En caso de que se haya llegado a un estado de error, permite obtener una

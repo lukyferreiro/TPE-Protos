@@ -79,7 +79,6 @@ static enum request_state dstaddr(const uint8_t c, struct request_parser* p) {
 
     switch (p->request->dest_addr_type) {
         case SOCKS5_REQ_ADDRTYPE_IPV4:
-            //((uint8_t*)&(p->request->dest_addr.ipv4.sin_addr))[p->readBytes++] = c;
             p->request->dest_addr.ipv4.sin_addr.s_addr = (p->request->dest_addr.ipv4.sin_addr.s_addr << 8) + c;
             p->readBytes++;
             // Cuando termino de leer la IP, le paso el puerto
@@ -212,17 +211,16 @@ char* request_parser_error(struct request_parser* p) {
         case REQUEST_DSTADDR_FQDN:
         case REQUEST_DSTADDR:
         case REQUEST_DSTPORT:
-            return "No error";
+            return "[REQUEST_PARSER] No error";
             break;
-
         case REQUEST_ERROR_UNSUPPORTED_VERSION:
-            return "Unsupported version";
+            return "[REQUEST_PARSER] Unsupported version";
             break;
         case REQUEST_ERROR_UNSUPPORTED_ATYP:
-            return "Unsupported address type";
+            return "[REQUEST_PARSER] Unsupported address type";
             break;
         default:
-            return "Error";
+            return "[REQUEST_PARSER] Unknown error";
             break;
     }
 }

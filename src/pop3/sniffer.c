@@ -144,21 +144,20 @@ enum sniffer_state sniffer_parser_feed(sniffer_parser* p, const uint8_t b) {
     return p->state;
 }
 
-enum sniffer_state sniffer_parser_consume(struct sniffer_parser* p) {
-    while (!sniffer_parser_is_done(p) && buffer_can_read(&p->buffer)) {
+enum sniffer_state sniffer_parser_consume(struct sniffer_parser* p, bool* errored) {
+    while (!sniffer_parser_is_done(p, errored) && buffer_can_read(&p->buffer)) {
         uint8_t byte = buffer_read(&p->buffer);
         p->state = sniffer_parser_feed(p, byte);
     }
-
-    return sniffer_parser_is_done(p);
+    return sniffer_parser_is_done(p, errored);
 }
 
-bool sniffer_parser_is_done(struct sniffer_parser* p) {
+bool sniffer_parser_is_done(struct sniffer_parser* p, bool* errored) {
     if (p->state == SNIFFER_SUCCESS) {
-        logger(INFO, "%s\n", p->username);
-        logger(INFO, "%s\n", p->password);
+        *errored = false;
         return true;
     }
+    *errored = true;
     return false;
 }
 
@@ -172,11 +171,11 @@ char* sniffer_parser_error(struct sniffer_parser* p) {
         case SNIFFER_READ_PASS:
         case SNIFFER_CHECK_OK:
         case SNIFFER_SUCCESS:
-            ret = "No error";
+            ret = "[SNIFFER_PARSER] No error";
             break;
         case SNIFFER_ERROR:
         default:
-            ret = "Error";
+            ret = "[SNIFFER_PARSER] Error";
             break;
     }
     return ret;
