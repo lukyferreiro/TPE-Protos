@@ -137,7 +137,7 @@ enum sniffer_state sniffer_parser_feed(sniffer_parser* p, const uint8_t b) {
             // Nada para hacer
             break;
         default:
-            log(DEBUG, "Unknown state of sniffer parser");
+            logger(DEBUG, "Unknown state of sniffer parser");
             abort();
             break;
     }
@@ -156,8 +156,8 @@ enum sniffer_state sniffer_parser_consume(struct sniffer_parser* p) {
 
 bool sniffer_parser_is_done(struct sniffer_parser* p) {
     if (p->state == SNIFFER_SUCCESS) {
-        log(INFO, "%s\n", p->username);
-        log(INFO, "%s\n", p->password);
+        logger(INFO, "%s\n", p->username);
+        logger(INFO, "%s\n", p->password);
         return true;
     }
     return false;

@@ -154,7 +154,7 @@ enum request_state request_parser_feed(struct request_parser* p, const uint8_t b
             // Nada para hacer
             break;
         default:
-            log(DEBUG, "Unknown state on request parser");
+            logger(DEBUG, "Unknown state on request parser");
             abort();
             break;
     }
@@ -266,7 +266,7 @@ int request_parser_marshall(buffer* b, const enum socks5_response_status status,
             request_len += dest_addr_size;
             break;
         default:
-            log(LOG_ERROR, "Invalid ATYP in request_parser_marshall");
+            logger(LOG_ERROR, "Invalid ATYP in request_parser_marshall");
             return -1;
             break;
     }

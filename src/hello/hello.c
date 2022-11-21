@@ -43,10 +43,9 @@ enum hello_state hello_parser_feed(struct hello_parser* p, const uint8_t b) {
             // nada que hacer, nos quedamos en este estado
             break;
         default:
-            log(LOG_ERROR, "Unknown state in hello\n");
+            logger(LOG_ERROR, "Unknown state in hello\n");
             abort();
             break;
-            ;
     }
 
     return p->state;

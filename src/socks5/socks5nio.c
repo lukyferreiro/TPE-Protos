@@ -14,6 +14,7 @@
 #include "request.h"
 #include "sniffer.h"
 #include "socks_utils.h"
+#include "statistics_utils.h"
 #include "stm.h"
 #include <arpa/inet.h>
 #include <assert.h> // assert
@@ -380,7 +381,7 @@ static struct socks5* socks5_new(int client_fd) {
         ret->next = 0;
     }
     if (ret == NULL) {
-        log(LOG_ERROR, "Failed to create socks");
+        logger(LOG_ERROR, "Failed to create socks");
         goto finally;
     }
 
@@ -438,7 +439,7 @@ void socksv5_pool_destroy(void) {
     struct socks5 *next, *s;
     for (s = pool; s != NULL; s = next) {
         next = s->next;
-        log(DEBUG, "Socks5 pool destroy");
+        logger(DEBUG, "Socks5 pool destroy");
         if (s->origin_resolution != NULL) {
             free(s->origin_resolution);
         }
@@ -491,7 +492,8 @@ static void socksv5_done(struct selector_key* key) {
             close(fds[i]);
         }
     }
-    log(DEBUG, "Connection closed");
+    dec_current_connections();
+    logger(DEBUG, "Connection closed");
 }
 
 void socksv5_passive_accept(struct selector_key* key) {
@@ -502,23 +504,23 @@ void socksv5_passive_accept(struct selector_key* key) {
     int client = accept(key->fd, (struct sockaddr*)&client_addr, &client_addr_len);
 
     if (client == -1) {
-        log(LOG_ERROR, "Fail to accept client connection with fd %d (negative value)", client);
+        logger(LOG_ERROR, "Fail to accept client connection with fd %d (negative value)", client);
         goto fail;
     }
 
     if(client > 1023){
-        log(LOG_ERROR, "Fail to accept client connection with fd %d (too big)", client);
+        logger(LOG_ERROR, "Fail to accept client connection with fd %d (too big)", client);
         goto fail;
     }
 
     if (selector_fd_set_nio(client) == -1) {
-        log(LOG_ERROR, "Fail to set non block");
+        logger(LOG_ERROR, "Fail to set non block");
         goto fail;
     }
 
     state = socks5_new(client);
     if (state == NULL) {
-        log(LOG_ERROR, "Fail to create new socks5 connection");
+        logger(LOG_ERROR, "Fail to create new socks5 connection");
         goto fail;
     }
 
@@ -526,11 +528,12 @@ void socksv5_passive_accept(struct selector_key* key) {
     state->client_addr_len = client_addr_len;
 
     if (selector_register(key->s, client, &socks5_handler, OP_READ, state) != SELECTOR_SUCCESS) {
-        log(LOG_ERROR, "Error while registering in selector");
+        logger(LOG_ERROR, "Error while registering in selector");
         goto fail;
     }
 
-    log(DEBUG, "New connection created from %s in socket %d", printSocketAddress((struct sockaddr*)&client_addr), client);
+    inc_current_connections();
+    logger(DEBUG, "New connection created from %s in socket %d", printSocketAddress((struct sockaddr*)&client_addr), client);
     return;
 
 fail:
@@ -581,6 +584,7 @@ static unsigned hello_read(struct selector_key* key) {
 
     if (n > 0) {
         buffer_write_adv(d->rb, n);
+        add_bytes_transferred(n);
         if (hello_parser_consume(d->rb, &d->parser, &error)) {
             if (selector_set_interest_key(key, OP_WRITE) == SELECTOR_SUCCESS) {
                 ret = hello_process(d);
@@ -625,6 +629,7 @@ static unsigned hello_write(struct selector_key* key) {
         ret = ERROR;
     } else {
         buffer_read_adv(d->wb, n);
+        add_bytes_transferred(n);
         if (!buffer_can_read(d->wb)) {
             if (selector_set_interest_key(key, OP_READ) == SELECTOR_SUCCESS) {
                 if (d->method == METHOD_AUTHENTICATION) {
@@ -804,7 +809,7 @@ static unsigned request_connect_to_origin(struct selector_key* key, struct reque
     int aux = connect(*fd, (const struct sockaddr*)&s->origin_addr, s->origin_addr_len);
     if (aux == -1) {
         if (errno == EINPROGRESS) {
-            log(INFO, "Connect to %s in progress", addr);
+            logger(INFO, "Connect to %s in progress", addr);
             if (selector_set_interest_key(key, OP_NOOP) != SELECTOR_SUCCESS) {
                 error = true;
                 goto finally;
@@ -815,7 +820,7 @@ static unsigned request_connect_to_origin(struct selector_key* key, struct reque
             }
             s->references += 1;
         } else {
-            log(INFO, "Fail connecting to %s ", addr);
+            logger(INFO, "Fail connecting to %s ", addr);
             status = errno_to_socks(errno);
             error = true;
             goto finally;
@@ -851,6 +856,7 @@ static unsigned request_read(struct selector_key* key) {
 
     if (n > 0) {
         buffer_write_adv(b, n);
+        add_bytes_transferred(n);
         if (request_parser_consume(b, &d->parser, &error)) {
             ret = request_process(key, d);
         }
@@ -866,11 +872,11 @@ static unsigned request_resolv_done(struct selector_key* key) {
     struct request_st* d = &s->client.request;
 
     if (s->origin_resolution == 0) {
-        log(INFO, "Resolution failed");
+        logger(INFO, "Resolution failed");
         d->status = SOCKS5_STATUS_HOST_UNREACHABLE;
         return REQUEST_WRITE;
     } else {
-        log(DEBUG, "Resolution success");
+        logger(DEBUG, "Resolution success");
         s->origin_domain = s->origin_resolution->ai_family;
         s->origin_addr_len = s->origin_resolution->ai_addrlen;
         memcpy(&s->origin_addr, s->origin_resolution->ai_addr, s->origin_resolution->ai_addrlen);
@@ -908,10 +914,10 @@ static unsigned request_connecting(struct selector_key* key) {
             s->client.request.status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
             ret = ERROR;
         } else if (error == 0) {
-            log(INFO, "Connection to origin success");
+            logger(INFO, "Connection to origin success");
             s->client.request.status = SOCKS5_STATUS_SUCCEED;
         } else {
-            log(LOG_ERROR, "Connection to origin failed");
+            logger(LOG_ERROR, "Connection to origin failed");
             s->client.request.status = errno_to_socks(error);
             if (selector_set_interest_key(key, OP_NOOP) != SELECTOR_SUCCESS) {
                 ret = ERROR;
@@ -950,13 +956,14 @@ static unsigned request_write(struct selector_key* key) {
         ret = ERROR;
     } else {
         buffer_read_adv(b, n);
+        add_bytes_transferred(n);
         if (!buffer_can_read(b)) {
-            if (d->status == SOCKS5_STATUS_SUCCEED) {
+            //if (d->status == SOCKS5_STATUS_SUCCEED) {
                 ret = COPY;
                 if (selector_set_interest_key(key, OP_READ) != SELECTOR_SUCCESS) {
                     ret = ERROR;
                 }
-            }
+            //}
         }
     }
 
@@ -1088,6 +1095,7 @@ static unsigned copy_write(struct selector_key* key) {
             d->other->duplex &= ~OP_READ;
         }
     } else {
+        add_bytes_transferred(n);
         if (socks5_args.sniffing) {
             sniff_credentials(key, ptr, n);
         }
@@ -1149,6 +1157,7 @@ static unsigned auth_read(struct selector_key* key) {
 
     if (n > 0) {
         buffer_write_adv(b, n);
+        add_bytes_transferred(n);
         if (auth_parser_consume(b, &d->parser, &error)) {
             if (selector_set_interest_key(key, OP_WRITE) == SELECTOR_SUCCESS) {
                 ret = auth_process(d);
@@ -1178,6 +1187,7 @@ static unsigned auth_write(struct selector_key* key) {
         ret = ERROR;
     } else {
         buffer_read_adv(d->wb, n);
+        add_bytes_transferred(n);
         if (!buffer_can_read(d->wb)) {
             if (selector_set_interest_key(key, OP_READ) == SELECTOR_SUCCESS) {
                 ret = REQUEST_READ;

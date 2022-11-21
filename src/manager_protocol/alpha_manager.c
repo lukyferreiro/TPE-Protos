@@ -72,11 +72,11 @@ void manager_passive_accept(struct selector_key* key) {
     ssize_t n = recvfrom(key->fd, alpha_manager.buffer_read, BUFFER_SIZE, 0, (struct sockaddr*)&alpha_manager.client_addr, &alpha_manager.client_addr_len);
 
     if (n <= 0) {
-        log(LOG_ERROR, "Alpha manager: recvfrom failed: %s ", strerror(errno));
+        logger(LOG_ERROR, "Alpha manager: recvfrom failed: %s ", strerror(errno));
     }
 
     if (udp_to_alpha_req(alpha_manager.buffer_read, &alpha_manager.alpha_req) < 0) {
-        log(LOG_ERROR, "Alpha manager: converting raw packet to request failed");
+        logger(LOG_ERROR, "Alpha manager: converting raw packet to request failed");
     }
 
     set_response_header(alpha_manager.alpha_req, &alpha_manager.alpha_res);
@@ -87,11 +87,11 @@ void manager_passive_accept(struct selector_key* key) {
     }
 
     if (alpha_res_to_packet(alpha_manager.buffer_write, &alpha_manager.alpha_res, &alpha_manager.response_len) < 0) {
-        log(LOG_ERROR, "Alpha manager: converting response to buffer failed");
+        logger(LOG_ERROR, "Alpha manager: converting response to buffer failed");
     }
 
     if (sendto(key->fd, alpha_manager.buffer_write, alpha_manager.response_len, 0, (const struct sockaddr*)&alpha_manager.client_addr, alpha_manager.client_addr_len) < 0) {
-        log(LOG_ERROR, "Alpha manager: sendto client not available");
+        logger(LOG_ERROR, "Alpha manager: sendto client not available");
     }
 }
 
