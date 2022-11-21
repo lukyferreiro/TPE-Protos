@@ -4,13 +4,14 @@
 #include "socks_utils.h"
 #include "args.h"
 #include "logger.h"
+#include "request.h"
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
 
-struct socks5_args socks5_args;
+extern struct socks5_args socks5_args;
 
 int create_socket(struct socks5_args* args, addr_type addr_type, bool is_udp) {
 

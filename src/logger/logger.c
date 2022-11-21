@@ -2,6 +2,7 @@
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 
 #include "logger.h"
+#include "socks_utils.h"
 #include <stdio.h>
 #include <time.h>
 
@@ -30,4 +31,10 @@ void logger(LOG_LEVEL level, const char* fmt, ...) {
     }
     if (level == FATAL)
         exit(1);
+}
+
+void sniffer_logger(char* username, char* password) {
+    time_t now = time(NULL);
+    struct tm* time_info = localtime(&now);
+    logger(INFO, "%s\t Sniffed credentials: %s:%s\n", time_info, username, password);
 }

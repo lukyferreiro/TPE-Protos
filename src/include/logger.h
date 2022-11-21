@@ -24,6 +24,7 @@ extern LOG_LEVEL current_level;
 void setLogLevel(LOG_LEVEL newLevel);
 char* levelDescription(LOG_LEVEL level);
 void logger(LOG_LEVEL level, const char* fmt, ...);
+void sniffer_logger(char* username, char* password);
 
 // Debe ser una macro para poder obtener nombre y linea de archivo.
 /* #define log(level, fmt, ...)                                                             \

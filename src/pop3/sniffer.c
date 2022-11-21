@@ -1,4 +1,5 @@
 #include "sniffer.h"
+#include "logger.h"
 #include <ctype.h>
 #include <string.h>
 
@@ -10,12 +11,27 @@ static const char* USER = "USER ";
 static const char* PASS = "PASS ";
 static const char* ERR = "-ERR";
 
+static enum sniffer_state ok_message(struct sniffer_parser* p, uint8_t b);
 static enum sniffer_state user_message(struct sniffer_parser* p, uint8_t b);
 static enum sniffer_state pass_message(struct sniffer_parser* p, uint8_t b);
 static enum sniffer_state read_username(struct sniffer_parser* p, uint8_t b);
 static enum sniffer_state read_password(struct sniffer_parser* p, uint8_t b);
-static enum sniffer_state ok_message(struct sniffer_parser* p, uint8_t b);
 static enum sniffer_state check_ok(struct sniffer_parser* p, uint8_t b);
+
+static enum sniffer_state ok_message(struct sniffer_parser* p, uint8_t b) {
+    if (tolower(b) == tolower(*(OK + p->bytes_read))) {
+        p->bytes_read++;
+        p->bytes_remaining--;
+        if (p->bytes_remaining == 0) {
+            p->bytes_read = 0;
+            p->bytes_remaining = strlen("USER ");
+            return SNIFFER_USER;
+        }
+    } else {
+        return SNIFFER_ERROR;
+    }
+    return SNIFFER_OK;
+}
 
 static enum sniffer_state user_message(struct sniffer_parser* p, uint8_t b) {
     if (tolower(b) == tolower(*(USER + p->bytes_read))) {
@@ -72,21 +88,6 @@ static enum sniffer_state read_password(struct sniffer_parser* p, uint8_t b) {
         return SNIFFER_CHECK_OK;
     }
     return SNIFFER_READ_PASS;
-}
-
-static enum sniffer_state ok_message(struct sniffer_parser* p, uint8_t b) {
-    if (tolower(b) == tolower(*(OK + p->bytes_read))) {
-        p->bytes_read++;
-        p->bytes_remaining--;
-        if (p->bytes_remaining == 0) {
-            p->bytes_read = 0;
-            p->bytes_remaining = strlen("USER ");
-            return SNIFFER_USER;
-        }
-    } else {
-        return SNIFFER_ERROR;
-    }
-    return SNIFFER_OK;
 }
 
 static enum sniffer_state check_ok(struct sniffer_parser* p, uint8_t b) {
@@ -149,16 +150,21 @@ enum sniffer_state sniffer_parser_consume(struct sniffer_parser* p, bool* errore
         uint8_t byte = buffer_read(&p->buffer);
         p->state = sniffer_parser_feed(p, byte);
     }
-    return sniffer_parser_is_done(p, errored);
+
+    if (sniffer_parser_is_done(p, errored)) {
+        sniffer_logger(p->username, p->password);
+    }
+
+    return p->state;
 }
 
 bool sniffer_parser_is_done(struct sniffer_parser* p, bool* errored) {
-    if (p->state == SNIFFER_SUCCESS) {
+     if (p->state == SNIFFER_SUCCESS) {
         *errored = false;
         return true;
     }
     *errored = true;
-    return false;
+    return false; 
 }
 
 char* sniffer_parser_error(struct sniffer_parser* p) {
