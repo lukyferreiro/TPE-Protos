@@ -13,5 +13,6 @@ bool valid_user_is_registered(char* user);
 bool server_check_if_full();
 void delete_user(char *user);
 void add_user(char *user, char *pass);
+bool isNumber(char* s);
 
 #endif

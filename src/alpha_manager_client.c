@@ -118,13 +118,20 @@ int main(const int argc, char** argv) {
     }
 
     char* environment_token = getenv("ALPHA_TKN");
-    if (environment_token == NULL || strlen(environment_token) < MIN_TOKEN_SIZE || strlen(environment_token) > MAX_TOKEN_SIZE) {
+    if (environment_token == NULL) {
         fprintf(stderr, "Check that the environment token %s exists\n", ALPHA_TKN);
+        exit(EXIT_FAILURE);
+    }
+    if (strlen(environment_token) < MIN_TOKEN_SIZE || strlen(environment_token) > MAX_TOKEN_SIZE) {
         fprintf(stderr, "Token must be between %d and %d characters\n", MIN_TOKEN_SIZE, MAX_TOKEN_SIZE);
         exit(EXIT_FAILURE);
-    } 
+    }
+    if(!isNumber(environment_token)) {
+        fprintf(stderr, "%s must be a numeric token\n", ALPHA_TKN);
+        exit(EXIT_FAILURE);
+    }
 
-    token = strtoul(environment_token, NULL, 10);
+    token = (uint32_t) strtoul(environment_token, NULL, 10);
 
     // Configuración general a donde se envía la información
     int sockfd;
@@ -219,7 +226,7 @@ int main(const int argc, char** argv) {
                 }
                 if (alpha_shell_commands[i_command].nparams > 0) {
                     if (param != NULL) {
-                        header_builder_with_param(&alpha_manager_req, i_command, param);
+                        valid_param = header_builder_with_param(&alpha_manager_req, i_command, param);
                     } else {
                         valid_param = false;
                     }
@@ -281,7 +288,7 @@ int main(const int argc, char** argv) {
 
 void help() {
     printf("|     NAME   |        SYNOPSIS     |                               "
-              "DESCRIPTION                                |\n");
+           "DESCRIPTION                                |\n");
     printf("|------------+---------------------+--------------------------------"
            "------------------------------------------|\n");
     for (int i = 0; i < CANT_COMMANDS; i++) {
@@ -302,14 +309,14 @@ void help() {
         print_description(alpha_shell_commands[i].description);
         printf(" |\n"); */
         printf("        |------------+---------------------+--------------------------------"
-           "------------------------------------------|\n");
+               "------------------------------------------|\n");
     }
 }
 
-static void print_white_spaces(int start, int end){
+static void print_white_spaces(int start, int end) {
     for (int j = start; j < end; j++) {
-            printf(" ");
-        }
+        printf(" ");
+    }
 }
 
 static bool header_builder_no_param(struct alpha_req* alpha_req, unsigned cmd) {

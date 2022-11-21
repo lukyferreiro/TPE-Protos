@@ -87,12 +87,19 @@ void parse_args(const int argc, char** argv, struct socks5_args* args) {
     args->mng_port = DEFAULT_PORT_MNG;
 
     char* token = getenv(ALPHA_TKN);
-    if (token == NULL || strlen(token) < MIN_TOKEN_SIZE || strlen(token) > MAX_TOKEN_SIZE) {
+    if (token == NULL) {
         fprintf(stderr, "Check that the environment token %s exists\n", ALPHA_TKN);
+        exit(EXIT_FAILURE);
+    }
+    if (strlen(token) < MIN_TOKEN_SIZE || strlen(token) > MAX_TOKEN_SIZE) {
         fprintf(stderr, "Token must be between %d and %d characters\n", MIN_TOKEN_SIZE, MAX_TOKEN_SIZE);
         exit(EXIT_FAILURE);
     }
-    args->mng_token = strtoul(token, NULL, 10);
+    if(!isNumber(token)) {
+        fprintf(stderr, "%s must be a numeric token\n", ALPHA_TKN);
+        exit(EXIT_FAILURE);
+    }
+    args->mng_token = (uint32_t) strtoul(token, NULL, 10);
 
     args->version = DEFAULT_VERSION;
     args->nusers = 0;
@@ -101,7 +108,7 @@ void parse_args(const int argc, char** argv, struct socks5_args* args) {
     args->auth = false;
 
     while (true) {
-        int c = getopt(argc, argv, "h:l:L:Np:P:u:v");
+        int c = getopt(argc, argv, "hl:L:Np:P:u:v");
         if (c == -1)
             break;
 

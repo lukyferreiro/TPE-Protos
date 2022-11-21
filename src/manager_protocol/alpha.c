@@ -239,5 +239,35 @@ static void alpha_data_to_buffer(current_alpha_data input, alpha_data alpha_data
 }
 
 char* alpha_error_report(alpha_status_code status_code) {
-    return NULL;
+    char* aux;
+    switch (status_code) {
+        case SC_INVALID_VERSION:
+            aux = "Invalid version";
+            break;
+        case SC_BAD_CREDENTIALS:
+            aux = "Authentication failed. Check ALPHA_TKN";
+            break;
+        case SC_INVALID_COMMAND:
+            aux = "Invalid command";
+            break;
+        case SC_INVALID_ARGUMENT:
+            aux = "Invalid argument";
+            break;
+        case SC_SERVER_IS_FULL:
+            aux = "Server is full";
+            break;
+        case SC_INVALID_USER_IS_REGISTERED:
+            aux = "User already registered";
+            break;
+        case SC_USER_NOT_FOUND:
+            aux = "User not found";
+            break;
+        case SC_INTERNAL_SERVER_ERROR:
+            aux = "Internal server error";
+            break;
+        default:
+            aux = "Unknown error";
+            break;
+    }
+    return aux;
 }

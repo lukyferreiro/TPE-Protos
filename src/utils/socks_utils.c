@@ -5,6 +5,7 @@
 #include "args.h"
 #include "logger.h"
 #include <arpa/inet.h>
+#include <ctype.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
@@ -41,7 +42,7 @@ int create_socket(struct socks5_args* args, addr_type addr_type, bool is_udp) {
         logger(LOG_ERROR, "Cannot set socket options");
     }
 
-    logger(INFO, "Listening on %s port %d", udp_or_tcp,  port);
+    logger(INFO, "Listening on %s port %d", udp_or_tcp, port);
 
     if (addr_type == ADDR_IPV4) {
         memset(&addr, 0, sizeof(addr));
@@ -97,7 +98,6 @@ bool valid_user_and_password(char* user, char* pass) {
 bool valid_user_is_registered(char* user) {
     for (int i = 0; i < MAX_USERS; i++) {
         if (socks5_args.users[i].name[0] != 0 && strcmp(user, socks5_args.users[i].name) == 0) {
-            fprintf(stderr, "%s\n", socks5_args.users[i].name);
             return true;
         }
     }
@@ -132,4 +132,12 @@ void delete_user(char* user) {
             flag = false;
         }
     }
+}
+
+bool isNumber(char* s) {
+    for (int i = 0; s[i] != '\0'; i++) {
+        if (isdigit(s[i]) == 0)
+            return false;
+    }
+    return true;
 }

@@ -2,6 +2,7 @@
 #include "alpha.h"
 #include "args.h"
 #include "buffer.h"
+#include "util.h"
 #include "logger.h"
 #include "socks_utils.h"
 #include "statistics_utils.h"
@@ -19,10 +20,16 @@
 #define N(x) (sizeof(x) / sizeof((x)[0]))
 
 typedef void (*res_handler_fun)(alpha_res*, alpha_req);
+extern struct socks5_args socks5_args;
+extern struct socks5_stats socks5_stats;
 
+static bool check_admin_token(struct alpha_req alpha_req);
+static bool check_version(struct alpha_req alpha_req);
+static bool check_cmd(struct alpha_req alpha_req);
+static bool check_alter_add_user(char* string);
+static bool check_alter_string(struct alpha_req alpha_req);
+static bool check_arguments(struct alpha_req alpha_req);
 static void set_response_header(struct alpha_req alpha_req, struct alpha_res* alpha_res);
-struct socks5_args socks5_args;
-struct socks5_stats socks5_stats;
 
 static void get_list_handler(alpha_res* alpha_res, alpha_req alpha_req);
 static void get_hist_conn_handler(alpha_res* alpha_res, alpha_req alpha_req);
@@ -96,10 +103,9 @@ void manager_passive_accept(struct selector_key* key) {
 }
 
 static bool check_admin_token(struct alpha_req alpha_req) {
-    //   if (alpha_req.token != socks5_args.mng_token)
-    //     return false;
-    // return true;
-    // Agregar campo a socks5_args
+    logger(DEBUG, "%d y %d", htonl(alpha_req.token), htonl(socks5_args.mng_token));
+    if (alpha_req.token != socks5_args.mng_token)
+        return false;
     return true;
 }
 
@@ -117,23 +123,44 @@ static bool check_cmd(struct alpha_req alpha_req) {
     return true;
 }
 
+static bool check_alter_add_user(char* string) {
+    if (*string == USER_PASSWORD_DELIMETER) {
+        return false;
+    }
+    char* temp = strchr(string, USER_PASSWORD_DELIMETER);
+    if (temp == NULL || strlen(temp) > MAX_LEN_USERS || *(temp++) == '\0' || strlen(temp) > MAX_LEN_USERS) {
+        return false;
+    }
+    return true;
+}
+
+static bool check_alter_string(struct alpha_req alpha_req) {
+    switch (alpha_req.command) {
+        case POST_ADD_USER:
+            if (!check_alter_add_user(alpha_req.data.string)) {
+                return false;
+            }
+        case POST_DEL_USER:
+            if (alpha_req.data.string[0] == 0 || strlen(alpha_req.data.string) > MAX_LEN_USERS) {
+                return false;
+            }
+    }
+    return true;
+}
+
 // Chequeo argumentos según tipos de dato que se requieran
 static bool check_arguments(struct alpha_req alpha_req) {
     bool ret = true;
-    switch (cmd_to_req_data_type(alpha_req.command)) {
-        case UINT_8_DATA:
-            // ret = check_alter_uint8(alpha_req);
-            break;
-        case STRING_DATA:
-            // ret = check_alter_string(alpha_req);
-        default:
-            break;
-    }
+    if (cmd_to_req_data_type(alpha_req.command) == STRING_DATA) {
+        ret = check_alter_string(alpha_req);
+    } 
     return ret;
 }
 
-static void set_response_header(struct alpha_req alpha_req,
-                                struct alpha_res* alpha_res) {
+/**
+ * Setea el header de las respuesta del cliente. Setea el status code
+ */
+static void set_response_header(struct alpha_req alpha_req, struct alpha_res* alpha_res) {
     alpha_res->status = SC_OK;
     if (check_version(alpha_req) == false) {
         alpha_res->status = SC_INVALID_VERSION;
@@ -177,22 +204,27 @@ static void get_list_handler(alpha_res* alpha_res, alpha_req alpha_req) {
 }
 
 static void get_hist_conn_handler(alpha_res* alpha_res, alpha_req alpha_req) {
+    logger(INFO, "Somenone in address %s has checked for historic connnections", printSocketAddress((const struct sockaddr*)&alpha_manager.client_addr));
     alpha_res->data.alpha_uint32 = socks5_stats.his_conn;
 }
 
 static void get_conc_conn_handler(alpha_res* alpha_res, alpha_req alpha_req) {
+    logger(INFO, "Somenone in address %s has checked for concurrent connnections", printSocketAddress((const struct sockaddr*)&alpha_manager.client_addr));
     alpha_res->data.alpha_uint16 = socks5_stats.conc_conn;
 }
 
 static void get_bytes_transf_handler(alpha_res* alpha_res, alpha_req alpha_req) {
+    logger(INFO, "Somenone in address %s has checked for bytes transfered", printSocketAddress((const struct sockaddr*)&alpha_manager.client_addr));
     alpha_res->data.alpha_uint32 = socks5_stats.bytes_transfered;
 }
 
 static void get_is_sniff_handler(alpha_res* alpha_res, alpha_req alpha_req) {
+    logger(INFO, "Somenone in address %s has checked if sniffing is enabled", printSocketAddress((const struct sockaddr*)&alpha_manager.client_addr));
     alpha_res->data.alpha_uint8 = socks5_args.sniffing;
 }
 
 static void get_is_auth_handler(alpha_res* alpha_res, alpha_req alpha_req) {
+    logger(INFO, "Somenone in address %s has checked if authentication is enabled", printSocketAddress((const struct sockaddr*)&alpha_manager.client_addr));
     alpha_res->data.alpha_uint8 = socks5_args.auth;
 }
 
@@ -203,6 +235,7 @@ static void post_add_user_handler(alpha_res* alpha_res, alpha_req alpha_req) {
     *password++ = 0;
     if (!server_check_if_full()) {
         if (!valid_user_is_registered(username)) {
+            logger(INFO, "User '%s' was added", username);
             add_user(username, password);
             alpha_res->status = SC_OK;
         } else {
@@ -216,6 +249,7 @@ static void post_add_user_handler(alpha_res* alpha_res, alpha_req alpha_req) {
 static void post_del_user_handler(alpha_res* alpha_res, alpha_req alpha_req) {
     char* username = alpha_req.data.string;
     if (valid_user_is_registered(username)) {
+        logger(INFO, "User '%s' was deleted", username);
         delete_user(username);
         alpha_res->status = SC_OK;
     } else {
@@ -224,17 +258,21 @@ static void post_del_user_handler(alpha_res* alpha_res, alpha_req alpha_req) {
 }
 
 static void post_enable_sniff_handler(alpha_res* alpha_res, alpha_req alpha_req) {
+    logger(INFO, "Sniffing enabled");
     socks5_args.sniffing = true;
 }
 
 static void post_disable_sniff_handler(alpha_res* alpha_res, alpha_req alpha_req) {
+    logger(INFO, "Sniffing disabled");
     socks5_args.sniffing = false;
 }
 
 static void post_enable_auth_handler(alpha_res* alpha_res, alpha_req alpha_req) {
+    logger(INFO, "Authentication enabled");
     socks5_args.auth = true;
 }
 
 static void post_disable_auth_handler(alpha_res* alpha_res, alpha_req alpha_req) {
+    logger(INFO, "Authentication disabled");
     socks5_args.auth = false;
 }

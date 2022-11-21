@@ -40,6 +40,9 @@ static void sigterm_handler(const int signal) {
 }
 
 int main(const int argc, char** argv) {
+    setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
+
     // No tenemos nada que leer de stdin
     close(STDIN_FILENO);
 

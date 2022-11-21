@@ -3,16 +3,16 @@
 
 // Un muliplexor de entrada salida
 
+#include "selector.h"
+#include "logger.h"
 #include <assert.h> // :)
 #include <errno.h>  // :)
+#include <fcntl.h>
 #include <pthread.h>
+#include <stdint.h> // SIZE_MAX
 #include <stdio.h>  // perror
 #include <stdlib.h> // malloc
 #include <string.h> // memset
-
-#include "selector.h"
-#include <fcntl.h>
-#include <stdint.h> // SIZE_MAX
 #include <sys/select.h>
 #include <sys/signal.h>
 #include <sys/socket.h>
@@ -41,6 +41,9 @@ const char* selector_error(const selector_status status) {
             break;
         case SELECTOR_IO:
             msg = "I/O error";
+            break;
+        case SELECTOR_FDINUSE:
+            msg = "FD already in use";
             break;
         default:
             msg = ERROR_DEFAULT_MSG;
@@ -107,10 +110,10 @@ struct item {
 
 /* Tarea bloqueante */
 struct blocking_job {
-    fd_selector s;              // Selector dueño de la resolucion 
-    int fd;                     // Fd dueño de la resolucion
-    void* data;                 // Datos del trabajo provisto por el usuario
-    struct blocking_job* next;  // El siguiente en la lista
+    fd_selector s;             // Selector dueño de la resolucion
+    int fd;                    // Fd dueño de la resolucion
+    void* data;                // Datos del trabajo provisto por el usuario
+    struct blocking_job* next; // El siguiente en la lista
 };
 
 /** Marca para usar en item->fd para saber que no está en uso */
@@ -208,6 +211,10 @@ static int items_max_fd(fd_selector s) {
 }
 
 static void items_update_fdset_for_fd(fd_selector s, const struct item* item) {
+    if (item->fd == -1) {
+        return;
+    }
+
     FD_CLR(item->fd, &s->master_r);
     FD_CLR(item->fd, &s->master_w);
 
@@ -523,7 +530,7 @@ selector_status selector_select(fd_selector s) {
                 for (int i = 0; i < s->max_fd; i++) {
                     if (FD_ISSET(i, &s->master_r) || FD_ISSET(i, &s->master_w)) {
                         if (-1 == fcntl(i, F_GETFD, 0)) {
-                            fprintf(stderr, "Bad descriptor detected: %d\n", i);
+                            logger(LOG_ERROR, "Bad descriptor detected: %d", i);
                         }
                     }
                 }
