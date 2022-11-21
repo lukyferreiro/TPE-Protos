@@ -69,9 +69,8 @@ enum auth_state auth_parser_feed(struct auth_parser* p, const uint8_t b) {
 }
 
 bool auth_parser_consume(buffer* buffer, struct auth_parser* p, bool* errored) {
-    uint8_t byte;
     while (!auth_parser_is_done(p->state, errored) && buffer_can_read(buffer)) {
-        byte = buffer_read(buffer);
+        uint8_t byte = buffer_read(buffer);
         p->state = auth_parser_feed(p, byte);
     }
     return auth_parser_is_done(p->state, errored);

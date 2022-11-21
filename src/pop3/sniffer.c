@@ -145,9 +145,8 @@ enum sniffer_state sniffer_parser_feed(sniffer_parser* p, const uint8_t b) {
 }
 
 enum sniffer_state sniffer_parser_consume(struct sniffer_parser* p) {
-    uint8_t byte;
     while (!sniffer_parser_is_done(p) && buffer_can_read(&p->buffer)) {
-        byte = buffer_read(&p->buffer);
+        uint8_t byte = buffer_read(&p->buffer);
         p->state = sniffer_parser_feed(p, byte);
     }
 

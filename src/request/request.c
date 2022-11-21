@@ -163,9 +163,8 @@ enum request_state request_parser_feed(struct request_parser* p, const uint8_t b
 }
 
 enum request_state request_parser_consume(buffer* b, struct request_parser* p, bool* errored) {
-    uint8_t byte;
     while (!request_parser_is_done(p->state, errored) && buffer_can_read(b)) {
-        byte = buffer_read(b);
+        uint8_t byte = buffer_read(b);
         p->state = request_parser_feed(p, byte);
     }
 

@@ -100,9 +100,8 @@ void parse_args(const int argc, char** argv, struct socks5_args* args) {
     args->sniffing = true;
     args->auth = false;
 
-    int c;
     while (true) {
-        c = getopt(argc, argv, "h:l:L:Np:P:u:v");
+        int c = getopt(argc, argv, "h:l:L:Np:P:u:v");
         if (c == -1)
             break;
 
