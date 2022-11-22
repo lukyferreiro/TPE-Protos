@@ -55,7 +55,7 @@ static void user(char* s, struct users* user) {
 static void version(void) {
     fprintf(stderr, "SOCKSv5 version: " DEFAULT_VERSION "\n"
                     "ITBA Protocolos de Comunicación 2022/2 -- Grupo 1\n"
-                    "ALFA PROTOCOL\n");
+                    "ALPHA PROTOCOL\n");
 }
 
 static void usage(const char* progname) {
@@ -68,8 +68,8 @@ static void usage(const char* progname) {
             "   -p <SOCKS-port>  Puerto entrante conexiones SOCKS.\n"
             "   -P <mgn-port>    Puerto entrante conexiones configuracion\n"
             "   -u <name>:<pass> Usuario y contraseña de usuario que puede usar el proxy. Hasta 10.\n"
-            "   -v               Imprime información sobre la versión versión y termina.\n"
-            "   -N               Deshabilita los passwords disectors.\n"
+            "   -v               Imprime información sobre la versión y termina.\n"
+            "   -N               Deshabilita el sniffing.\n"
             "\n",
             progname);
     exit(1);

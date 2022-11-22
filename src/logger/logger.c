@@ -16,7 +16,7 @@ static char* get_date() {
     char* date = (char*)malloc(MAX_DATE * sizeof(char));
     time_t now = time(NULL);
     struct tm* time_info = localtime(&now);
-    strftime(date, MAX_DATE, "%F-T%T", time_info);
+    strftime(date, MAX_DATE, "%F  T%T", time_info);
     return date;
 }
 

@@ -20,7 +20,7 @@ Al levantar el servidor, se pueden utilizar los siguientes argumentos:
     -p <SOCKS-port>  Puerto entrante conexiones SOCKS.
     -P <mgn-port>    Puerto entrante conexiones configuracion
     -u <name>:<pass> Usuario y contraseña de usuario que puede usar el proxy. Hasta 10.
-    -v               Imprime información sobre la versión versión y termina.
+    -v               Imprime información sobre la versión y termina.
     -N               Deshabilita los passwords disectors.\n"
 
 Para correr el cliente administrador, moverse a la carpeta src y ejercutar ./alpha_manager <addr> <port> 
@@ -31,3 +31,10 @@ Por default estos valores son 127.0.0.1 y 8080, pero pueden ser modificados con 
 
 -----------------------------------------------------------------------------------
 # Ubicación de los materiales
+
+
+-----------------------------------------------------------------------------------
+# Debug
+
+En el archivo logger.c existe una define 'IS_DEBUG', si este esta descomentado, se podran observar
+algunos logs de debug
