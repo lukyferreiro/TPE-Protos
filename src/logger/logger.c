@@ -8,16 +8,21 @@
 
 #define MAX_DATE 21
 
-static char* get_date();
 
 LOG_LEVEL current_level = DEBUG;
 
-static char* get_date() {
+char* get_date() {
     char* date = (char*)malloc(MAX_DATE * sizeof(char));
     time_t now = time(NULL);
     struct tm* time_info = localtime(&now);
     strftime(date, MAX_DATE, "%F  T%T", time_info);
     return date;
+}
+
+void get_date_buff(char* buff) {
+    time_t now = time(NULL);
+    struct tm* time_info = localtime(&now);
+    strftime(buff, MAX_DATE, "%FT%T", time_info);
 }
 
 void setLogLevel(LOG_LEVEL newLevel) {

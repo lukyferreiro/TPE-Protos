@@ -28,6 +28,7 @@
 #include <time.h>
 #include <unistd.h> // close
 
+#define MAX_DATE 21
 #define N(x) (sizeof(x) / sizeof((x)[0]))
 /** Obtiene el struct (socks5 *) desde la llave de selección */
 #define ATTACHMENT(key) ((struct socks5*)(key)->data)
@@ -213,6 +214,8 @@ struct socks5 {
     struct sockaddr_storage client_addr;
     socklen_t client_addr_len;
     int client_fd;
+    //char* date_client;
+    char date_client[MAX_DATE];
 
     /** Resolucion de la direccion del origin server */
     struct addrinfo* origin_resolution;
@@ -494,7 +497,7 @@ static void socksv5_done(struct selector_key* key) {
         }
     }
     dec_current_connections();
-    logger(INFO, "Connection of %s closed", printSocketAddress((struct sockaddr*)&ATTACHMENT(key)->client_addr));
+    logger(INFO, "Connection from %s closed", printSocketAddress((struct sockaddr*)&ATTACHMENT(key)->client_addr));
     logger(INFO, "-----------------------------------------------------");
 }
 
@@ -813,7 +816,7 @@ static unsigned request_connect_to_origin(struct selector_key* key, struct reque
     int aux = connect(*fd, (const struct sockaddr*)&s->origin_addr, s->origin_addr_len);
     if (aux == -1) {
         if (errno == EINPROGRESS) {
-            logger(INFO, "Connect to %s by client %d in progress", printSocketAddress((struct sockaddr*)&s->origin_addr), d->client_fd);
+            logger(INFO, "Connect to %s from fd %d to fd %d in progress", printSocketAddress((struct sockaddr*)&s->origin_addr), d->origin_fd, d->client_fd);
             if (selector_set_interest_key(key, OP_NOOP) != SELECTOR_SUCCESS) {
                 error = true;
                 goto finally;
@@ -937,7 +940,11 @@ static unsigned request_connecting(struct selector_key* key) {
             s->client.request.status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
             ret = ERROR;
         } else if (error == 0) {
-            logger(INFO, "Connected to %s successfully", printSocketAddress((struct sockaddr*)&s->origin_addr));
+            char date[MAX_DATE];
+            get_date_buff(date);
+            logger(INFO, "%s connected to %s successfully at %s", printSocketAddress((struct sockaddr*)&s->client_addr), printSocketAddress((struct sockaddr*)&s->origin_addr), date);
+            strncpy(s->date_client, date, MAX_DATE);
+            //s->date_client = date;
             s->client.request.status = SOCKS5_STATUS_SUCCEED;
         } else {
             // Si no me pude conectar con el primera resolucion de nombre

@@ -14,7 +14,7 @@
 #include <unistd.h>
 
 //TODO comentar este define para que no aparezcan los logs de debug
-#define IS_DEBUG 1
+//#define IS_DEBUG 1
 
 typedef enum { DEBUG = 0, INFO, LOG_ERROR, FATAL } LOG_LEVEL;
 
@@ -24,6 +24,8 @@ extern LOG_LEVEL current_level;
 ** Minimo nivel de log a registrar.
 ** Cualquier llamada a log con un nivel mayor a newLevel sera ignorada
 */
+char* get_date(void);
+void get_date_buff(char* buff);
 void setLogLevel(LOG_LEVEL newLevel);
 char* levelDescription(LOG_LEVEL level);
 void logger(LOG_LEVEL level, const char* fmt, ...);

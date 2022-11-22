@@ -175,6 +175,8 @@ int main(const int argc, char** argv) {
     // Registrar sigterm es útil para terminar el programa normalmente.
     signal(SIGTERM, sigterm_handler);
     signal(SIGINT, sigterm_handler);
+    signal(SIGSTOP, sigterm_handler);
+    signal(SIGQUIT, sigterm_handler);
 
     struct timeval tv;
     tv.tv_sec = TIMEOUT_SEC;
@@ -195,13 +197,14 @@ int main(const int argc, char** argv) {
         memset(user_input, 0, USER_INPUT_SIZE);
         aux = fgets(user_input, USER_INPUT_SIZE, stdin);
         if (aux == NULL) {
-            printf("Input is null");
+            printf("\nInput is null\n");
+            done = true;
         }
 
         if (user_input[0] == 0) {
             printf("No command specified.\n");
             continue;
-        }
+        }  
 
         user_input[strcspn(user_input, "\r\n")] = 0;
         command = user_input;
@@ -244,8 +247,8 @@ int main(const int argc, char** argv) {
         if (valid_param == false) {
             printf("Invalid parameter\n");
             printf("Command: %s\t Usage: %s %s\t description: %s\n",
-                   alpha_shell_commands[i_command].name, alpha_shell_commands[i_command].name, alpha_shell_commands[i_command].param_name,
-                   alpha_shell_commands[i_command].description);
+                   alpha_shell_commands[i_command].name, alpha_shell_commands[i_command].name,
+                   alpha_shell_commands[i_command].param_name, alpha_shell_commands[i_command].description);
             continue;
         }
 
@@ -261,7 +264,7 @@ int main(const int argc, char** argv) {
             fprintf(stderr, "Error building request packet");
         }
 
-        // Envio el request al server y luego recibo la respusta segun el tipo de IP
+        // Envio el request al server y luego recibo la respuesta segun el tipo de IP
         if (ip_type == ADDR_IPV4) {
             sendto(sockfd, buffer_out, req_size, MSG_CONFIRM, (const struct sockaddr*)&serv_addr, sizeof(serv_addr));
             resp_size = recvfrom(sockfd, (char*)buffer_in, BUFFER_SIZE, MSG_WAITALL, (struct sockaddr*)&serv_addr, &len);
@@ -303,13 +306,7 @@ void help() {
         printf(" | ");
         printf("%s", alpha_shell_commands[i].description);
         print_white_spaces(strlen(alpha_shell_commands[i].description), 72);
-        printf(" | ");
-        /*print_usage(alpha_shell_commands[i].param_name);
-        printf(" | ");
-        print_description(alpha_shell_commands[i].description);
-        printf(" |\n"); */
-        printf("        |------------+---------------------+--------------------------------"
-               "------------------------------------------|\n");
+        printf(" | \n");
     }
 }
 

@@ -35,7 +35,7 @@ extern struct socks5_args socks5_args;
 extern struct socks5_stats socks5_stats;
 
 static void sigterm_handler(const int signal) {
-    printf("Signal %d, cleaning up and exiting\n", signal);
+    printf("\nSignal %d, cleaning up and exiting\n", signal);
     done = true;
 }
 
@@ -186,7 +186,7 @@ int main(const int argc, char** argv) {
         }
     }
     if (err_msg == NULL) {
-        err_msg = "Everything it's fine. Closing";
+        err_msg = "Everything it's fine. \nClosing";
     }
 
 finally:

@@ -1,15 +1,13 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
 // PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 
+#include "netutils.h"
+#include <arpa/inet.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-
-#include <arpa/inet.h>
 #include <unistd.h>
-
-#include "netutils.h"
 
 #define N(x) (sizeof(x) / sizeof((x)[0]))
 
