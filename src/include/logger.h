@@ -20,16 +20,35 @@ typedef enum { DEBUG = 0, INFO, LOG_ERROR, FATAL } LOG_LEVEL;
 
 extern LOG_LEVEL current_level;
 
-/*
-** Minimo nivel de log a registrar.
-** Cualquier llamada a log con un nivel mayor a newLevel sera ignorada
-*/
-//char* get_date(void);
+/**
+ * @brief Deja en el buffer recibido como parametro la fecha actual
+ */
 void get_date_buff(char* buff);
+
+/**
+ * @brief Setea el log level
+ */
 void setLogLevel(LOG_LEVEL newLevel);
+
+/**
+ * @brief Retorna el log level como string
+ */
 char* levelDescription(LOG_LEVEL level);
+
+/**
+ * @brief Loguea segun el log level y el formato y argumetos recibidos
+ */
 void logger(LOG_LEVEL level, const char* fmt, ...);
+
+/**
+ * @brief Funcion que loguea unicamente en DEBUG
+ * Esta funciona si el define IS_DEBUG esta encendido
+ */
 void log_debug(const char* fmt, ...);
+
+/**
+ * @brief Imprime el usuario y la contraseña sniffeadas mediante POP3
+ */
 void sniffer_logger(char* username, char* password);
 
 // Debe ser una macro para poder obtener nombre y linea de archivo.
@@ -44,4 +63,5 @@ void sniffer_logger(char* username, char* password);
             exit(1);                                                                     \
     }
 */
+
 #endif  

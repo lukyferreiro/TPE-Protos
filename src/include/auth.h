@@ -85,36 +85,43 @@ typedef struct auth_parser {
     uint8_t credentials;
 } auth_parser;
 
-/** Inicializa el parser */
+/**
+ * @brief Inicializa el parser
+ */
 void auth_parser_init(struct auth_parser* p);
 
-/** Entrega un byte al parser. Retorna true si se llego al final  */
+/**
+ * @brief Entrega un byte al parser. Retorna true si se llego al final
+ */
 enum auth_state auth_parser_feed(struct auth_parser* p, const uint8_t b);
 
 /**
- * Por cada elemento del buffer llama a 'auth_parser_feed' hasta que
+ * @brief Por cada elemento del buffer llama a 'auth_parser_feed' hasta que
  * el parseo se encuentra completo o se requieren mas bytes.
  */
 bool auth_parser_consume(buffer* buffer, struct auth_parser* p, bool* errored);
 
 /**
- * Permite distinguir a quien usa 'auth_parser_feed' si debe seguir
+ * @brief Permite distinguir a quien usa 'auth_parser_feed' si debe seguir
  * enviando caracters o no.
  * En caso de haber terminado permite tambien saber si se debe a un error
  */
 bool auth_parser_is_done(enum auth_state state, bool* errored);
 
 /**
- * En caso de que se haya llegado a un estado de error, permite obtener una
+ * @brief En caso de que se haya llegado a un estado de error, permite obtener una
  * representación textual que describe el problema
  */
 char* auth_parser_error(struct auth_parser* p);
 
-void auth_parser_close(struct auth_parser* p);
-
 /**
- * Serializa en buff la respuesta al request.
- * Retorna la cantidad de bytes ocupados del buffer o -1 si no había espacio suficiente.
+ * @brief Libera recursos internos del parser
+ */
+void auth_parser_close(struct auth_parser* p);
+/**
+ * @brief Serializa en buff la respuesta al request.
+ * 
+ * @return cantidad de bytes ocupados del buffer o -1 si no había espacio suficiente. 
  */
 int auth_parser_marshall(buffer* b, const uint8_t status, uint8_t version);
 

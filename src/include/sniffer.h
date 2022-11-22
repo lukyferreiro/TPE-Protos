@@ -34,32 +34,38 @@ typedef struct sniffer_parser {
     uint16_t bytes_read;
 } sniffer_parser;
 
-/** Inicializa el parser */
+/**
+ * @brief Inicializa el parser
+ */
 void sniffer_parser_init(sniffer_parser* p);
 
-/** Entrega un byte al parser. retorna true si se llego al final  */
+/**
+ * @brief Entrega un byte al parser. retorna true si se llego al final
+ */
 enum sniffer_state sniffer_parser_feed(sniffer_parser* p, const uint8_t b);
 
 /**
- * Por cada elemento del buffer llama a 'sniffer_parser_feed' hasta que
+ * @brief Por cada elemento del buffer llama a 'sniffer_parser_feed' hasta que
  * el parseo se encuentra completo o se requieren mas bytes.
  */
 enum sniffer_state sniffer_parser_consume(struct sniffer_parser* p, bool* errored);
 
 /**
- * Permite distinguir a quien usa 'sniffer_parser_feed' si debe seguir
+ * @brief Permite distinguir a quien usa 'sniffer_parser_feed' si debe seguir
  * enviando caracters o no.
  * En caso de haber terminado permite tambien saber si se debe a un error
  */
 bool sniffer_parser_is_done(struct sniffer_parser* p, bool* errored);
 
 /**
- * En caso de que se haya llegado a un estado de error, permite obtener una
+ * @brief En caso de que se haya llegado a un estado de error, permite obtener una
  * representación textual que describe el problema
  */
 char* sniffer_parser_error(struct sniffer_parser* p);
 
-/** Libera recursos internos del parser */
+/**
+ * @brief Libera recursos internos del parser
+ */
 void sniffer_parser_close(struct sniffer_parser* p);
 
 #endif

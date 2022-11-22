@@ -89,12 +89,14 @@ struct buffer {
     uint8_t* write; // Puntero de escritura
 };
 
-/** Inicializa el buffer sin utilizar el heap */
+/**
+ * @brief Inicializa el buffer sin utilizar el heap
+ * 
+ */
 void buffer_init(buffer* b, const size_t n, uint8_t* data);
 
 /**
- * Retorna un puntero donde se pueden escribir hasta `*nbytes`.
- * Se debe notificar mediante la función `buffer_write_adv'
+ * @return Puntero donde se pueden escribir hasta '*nbytes' 
  */
 uint8_t* buffer_write_ptr(buffer* b, size_t* nbyte);
 void buffer_write_adv(buffer* b, const ssize_t bytes);
@@ -102,22 +104,35 @@ void buffer_write_adv(buffer* b, const ssize_t bytes);
 uint8_t* buffer_read_ptr(buffer* b, size_t* nbyte);
 void buffer_read_adv(buffer* b, const ssize_t bytes);
 
-/** Obtiene un byte */
+/**
+ * @brief Obtiene un byte
+ */
 uint8_t buffer_read(buffer* b);
 
-/** Escribe un byte */
+/**
+ * @brief Escribe un byte
+ */
 void buffer_write(buffer* b, uint8_t c);
 
-/** Compacta el buffer */
+/**
+ * @brief Compacta el buffer
+ */
 void buffer_compact(buffer* b);
 
-/** Reinicia todos los punteros */
+/**
+ * @brief Reinicia todos los punteros
+ */
 void buffer_reset(buffer* b);
 
-/** Retorna true si hay bytes para leer del buffer */
+/**
+ * @brief Retorna true si hay bytes para leer del buffer
+ */
 bool buffer_can_read(buffer* b);
 
-/** Retorna true si se pueden escribir bytes en el buffer */
+/**
+ * @brief Retorna true si se pueden escribir bytes en el buffer
+ * 
+ */
 bool buffer_can_write(buffer* b);
 
 #endif

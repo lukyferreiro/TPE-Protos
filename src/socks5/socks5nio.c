@@ -883,7 +883,6 @@ static unsigned request_resolv_done(struct selector_key* key) {
     struct addrinfo* aip;
 
     ailist = s->origin_resolution;
-    logger(INFO, "Resolv FQDN information");
     log_debug("---------Resolv FQDN information---------");
     for (aip = ailist; aip != NULL; aip = aip->ai_next) {
         log_debug("Type=%s, Protocol=%s, Address=%s ", printFamily(aip), printProtocol(aip), printAddressPort(aip, aip->ai_addr));
@@ -942,7 +941,7 @@ static unsigned request_connecting(struct selector_key* key) {
         } else if (error == 0) {
             char date[MAX_DATE];
             get_date_buff(date);
-            logger(INFO, "%s connected to %s successfully at %s", printSocketAddress((struct sockaddr*)&s->client_addr), printSocketAddress((struct sockaddr*)&s->origin_addr), date);
+            logger(INFO, "%s connected to socket %d successfully at %s", printSocketAddress((struct sockaddr*)&s->client_addr), &s->origin_fd, date);
             strncpy(s->date_client, date, MAX_DATE);
             //s->date_client = date;
             s->client.request.status = SOCKS5_STATUS_SUCCEED;

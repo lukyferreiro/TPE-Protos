@@ -101,43 +101,55 @@ enum socks5_response_status {
     SOCKS5_STATUS_ADDRESS_TYPE_NOT_SUPPORTED = 0x08,
 };
 
-/** Inicializa el parser */
+/**
+ * @brief Inicializa el parser
+ */
 void request_parser_init(struct request_parser* p);
 
-/** Entrega un byte al parser. Retorna true si se llego al final  */
+/**
+ * @brief Entrega un byte al parser. Retorna true si se llego al final
+ */
 enum request_state request_parser_feed(struct request_parser* p, const uint8_t b);
 
 /**
- * Por cada elemento del buffer llama a 'request_parser_feed' hasta que
+ * @brief Por cada elemento del buffer llama a 'request_parser_feed' hasta que
  * el parseo se encuentra completo o se requieren mas bytes.
  */
 enum request_state request_parser_consume(buffer* b, struct request_parser* p, bool* errored);
 
 /**
- * Permite distinguir a quien usa 'request_parser_feed' si debe seguir
+ * @brief Permite distinguir a quien usa 'request_parser_feed' si debe seguir
  * enviando caracters o no.
  * En caso de haber terminado permite tambien saber si se debe a un error
  */
 bool request_parser_is_done(enum request_state st, bool* errored);
 
 /**
- * En caso de que se haya llegado a un estado de error, permite obtener una
+ * @brief En caso de que se haya llegado a un estado de error, permite obtener una
  * representación textual que describe el problema
  */
 char* request_parser_error(struct request_parser* p);
 
+/**
+ * @brief Libera recursos internos del parser
+ */
 void request_parser_close(struct request_parser* p);
 
 /**
- * Serializa en buff la respuesta al request.
- * Retorna la cantidad de bytes ocupados del buffer o -1 si no había espacio suficiente.
+ * @brief Serializa en buff la respuesta al request.
+
+ * @return Retorna la cantidad de bytes ocupados del buffer o -1 si no había espacio suficiente.
  */
 int request_parser_marshall(buffer* b, const enum socks5_response_status status, const enum socks5_addr_type atyp, const union socks5_addr dest_addr, const in_port_t dest_port);
 
-/** Convierte a errno en socks5_response_status */
+/**
+ * @brief Convierte a errno en socks5_response_status
+ */
 enum socks5_response_status errno_to_socks(int e);
 
-/** Se encarga de la resolcuión de un request */
+/**
+ * @brief Se encarga de la resolución de un request
+ */
 enum socks5_response_status cmd_resolve(struct request* request, struct sockaddr** originaddr, socklen_t* originlen, int* domain);
 
 #endif

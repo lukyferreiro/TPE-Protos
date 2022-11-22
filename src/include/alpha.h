@@ -84,19 +84,27 @@ typedef struct alpha_res {
     current_alpha_data data;
 } alpha_res;
 
-// Metodos que nos dirán el tipo de dato a devolver segun el comando que se le pase
+/**
+ * @brief Funciones que devuelve el tipo de dato segunel comando recibido
+ */
 alpha_data cmd_to_req_data_type(unsigned alpha_cmd);
 alpha_data cmd_to_res_data_type(unsigned alpha_cmd);
 
-// Metodos que convertirán el buffer udp de entrada a una struct de nuestro protocolo
+/**
+ * @brief Funciones que convertirán el buffer UDP de entrada a un request/response
+ */
 int udp_to_alpha_req(char* raw_buffer, struct alpha_req* request);
 int udp_to_alpha_res(char* raw_buffer, struct alpha_res* response);
 
-// Metodos que transformaran nuestra
+/**
+ * @brief Funciones que trasnformaran el request/response a un paquete UDP
+ */
 int alpha_req_to_packet(char* output, struct alpha_req* input, int* size);
 int alpha_res_to_packet(char* output, struct alpha_res* input, int* size);
 
-// Metodo para reportar errores
+/**
+ * @brief Funcion para reportar errores
+ */
 char* alpha_error_report(alpha_status_code status_code);
 
 #endif
