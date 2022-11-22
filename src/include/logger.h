@@ -24,7 +24,7 @@ extern LOG_LEVEL current_level;
 ** Minimo nivel de log a registrar.
 ** Cualquier llamada a log con un nivel mayor a newLevel sera ignorada
 */
-char* get_date(void);
+//char* get_date(void);
 void get_date_buff(char* buff);
 void setLogLevel(LOG_LEVEL newLevel);
 char* levelDescription(LOG_LEVEL level);

@@ -144,8 +144,6 @@ int main(const int argc, char** argv) {
     char buffer_in[BUFFER_SIZE];
     char buffer_out[BUFFER_SIZE];
     char user_input[USER_INPUT_SIZE];
-    char* command;
-    char* param;
 
     memset(&serv_addr, 0, sizeof(serv_addr));
     memset(&serv_addr6, 0, sizeof(serv_addr6));
@@ -188,14 +186,13 @@ int main(const int argc, char** argv) {
         exit(EXIT_FAILURE);
     }
 
-    char* aux;
     while (!done) {
-        command = NULL;
-        param = NULL;
+        char* command = NULL;
+        char* param = NULL;
         printf("Alpha manager client $ ");
 
         memset(user_input, 0, USER_INPUT_SIZE);
-        aux = fgets(user_input, USER_INPUT_SIZE, stdin);
+        char* aux = fgets(user_input, USER_INPUT_SIZE, stdin);
         if (aux == NULL) {
             printf("\nInput is null\n");
             done = true;

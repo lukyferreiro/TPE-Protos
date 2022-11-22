@@ -47,8 +47,10 @@ static void user(char* s, struct users* user) {
             exit(EXIT_FAILURE);
         }
 
-        strcpy(user->name, s);
-        strcpy(user->pass, p);
+        //strcpy(user->name, s);
+        //strcpy(user->pass, p);
+        memcpy(user->name, s, strlen(s)+1);
+        memcpy(user->pass, p, strlen(p)+1);
     }
 }
 

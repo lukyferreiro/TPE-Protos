@@ -424,7 +424,7 @@ static void socks5_destroy(struct socks5* s) {
     if (s == NULL) {
         // Nada para hacer
     } else if (s->references == 1) {
-        if (s != NULL) {
+        //if (s != NULL) {
             if (pool_size < max_pool) {
                 s->next = pool;
                 pool = s;
@@ -432,7 +432,7 @@ static void socks5_destroy(struct socks5* s) {
             } else {
                 socks5_destroy_(s);
             }
-        }
+        //}
     } else {
         s->references -= 1;
     }
@@ -938,7 +938,7 @@ static unsigned request_connecting(struct selector_key* key) {
     if (getsockopt(*s->orig.conn.origin_fd, SOL_SOCKET, SO_ERROR, &error, &len) == 0) {
         if (selector_set_interest(key->s, *s->orig.conn.client_fd, OP_WRITE) != SELECTOR_SUCCESS) {
             s->client.request.status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
-            ret = ERROR;
+            //ret = ERROR;
         } else if (error == 0) {
             char date[MAX_DATE];
             get_date_buff(date);
@@ -962,7 +962,7 @@ static unsigned request_connecting(struct selector_key* key) {
             logger(LOG_ERROR, "[SOCKS5] Connection to %s failed", printSocketAddress((struct sockaddr*)&s->origin_addr));
             s->client.request.status = errno_to_socks(error);
             if (selector_set_interest_key(key, OP_NOOP) != SELECTOR_SUCCESS) {
-                ret = ERROR;
+                //ret = ERROR;
                 s->client.request.status = SOCKS5_STATUS_GENERAL_SERVER_FAILURE;
             }
         }

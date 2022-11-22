@@ -55,13 +55,11 @@ const char* sockaddr_to_human(char* buff, const size_t buffsize, const struct so
 
 int sock_blocking_write(const int fd, buffer* b) {
     int ret = 0;
-    ssize_t nwritten;
     size_t n;
-    uint8_t* ptr;
 
     do {
-        ptr = buffer_read_ptr(b, &n);
-        nwritten = send(fd, ptr, n, MSG_NOSIGNAL);
+        uint8_t* ptr = buffer_read_ptr(b, &n);
+        ssize_t nwritten = send(fd, ptr, n, MSG_NOSIGNAL);
         if (nwritten > 0) {
             buffer_read_adv(b, nwritten);
         } else /* if (errno != EINTR) */ {

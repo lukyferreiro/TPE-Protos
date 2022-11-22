@@ -11,13 +11,13 @@
 
 LOG_LEVEL current_level = DEBUG;
 
-char* get_date() {
+/* char* get_date() {
     char* date = (char*)malloc(MAX_DATE * sizeof(char));
     time_t now = time(NULL);
     struct tm* time_info = localtime(&now);
     strftime(date, MAX_DATE, "%F  T%T", time_info);
     return date;
-}
+} */
 
 void get_date_buff(char* buff) {
     time_t now = time(NULL);
@@ -62,7 +62,8 @@ void log_debug(const char* fmt, ...) {
 }
 
 void sniffer_logger(char* username, char* password) {
-    char* date = get_date();
-    logger(INFO, "%s\t Sniffed credentials: %s:%s\n", get_date(), username, password);
-    free(date);
+    char date[MAX_DATE];
+    get_date_buff(date);
+    logger(INFO, "%s\t Sniffed credentials: %s:%s\n", date, username, password);
+    //free(date);
 }

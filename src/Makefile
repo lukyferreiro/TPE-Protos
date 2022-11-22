@@ -10,7 +10,7 @@ main:
 	$(CC) $(LDFLAGS) $(GCCFLAGS) -o alpha_manager alpha_manager_client.c $(UTILS)
 
 clean:
-	rm -rf socks5d alpha_manager
+	rm -rf socks5d alpha_manager valgrind_socks5.txt
 	rm -rf ./check
 
 check:
@@ -24,5 +24,8 @@ check:
 
 	rm PVS-Studio.log
 	mv strace_out check
+
+	valgrind --leak-check=yes --show-leak-kinds=all --track-origins=yes --verbose --log-file=valgrind_socks5.txt ./socks5d 
+
 
 .PHONY: all clean check

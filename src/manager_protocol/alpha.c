@@ -184,15 +184,15 @@ int alpha_res_to_packet(char* output, struct alpha_res* input, int* size) {
     return 0;
 }
 
-static int get_packet_size(alpha_packet_type alpha_packet_type, unsigned command, char* data) {
+static int get_packet_size(alpha_packet_type alpha_packet_type, unsigned alpha_cmd, char* data) {
     size_t size = 0;
     alpha_data alpha_data;
     if (alpha_packet_type == ALPHA_REQUEST) {
         size += ALPHA_REQUEST_HEADER_SIZE;
-        alpha_data = cmd_to_req_data_type(command);
+        alpha_data = cmd_to_req_data_type(alpha_cmd);
     } else {
         size += ALPHA_RESPONSE_HEADER_SIZE;
-        alpha_data = cmd_to_res_data_type(command);
+        alpha_data = cmd_to_res_data_type(alpha_cmd);
     }
 
     switch (alpha_data) {

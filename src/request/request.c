@@ -93,7 +93,7 @@ static enum request_state dstaddr(const uint8_t c, struct request_parser* p) {
             p->request->dest_addr.fqdn[p->readBytes++] = c;
             break;
         default:
-            next = REQUEST_ERROR_UNSUPPORTED_ATYP;
+            //next = REQUEST_ERROR_UNSUPPORTED_ATYP;
             break;
     }
     // Cuando termino la lectura
@@ -316,7 +316,7 @@ enum socks5_response_status cmd_resolve(struct request* request, struct sockaddr
     switch (request->dest_addr_type) {
         // En caso de tener una IPv4
         case SOCKS5_REQ_ADDRTYPE_IPV4: {
-            *domain = AF_INET;
+            //*domain = AF_INET;
             addr = (struct sockaddr*)&(request->dest_addr.ipv4);
             addrlen = sizeof(request->dest_addr.ipv4);
             request->dest_addr.ipv4.sin_port = request->dest_port;
