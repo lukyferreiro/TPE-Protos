@@ -51,7 +51,7 @@ alpha_shell_command alpha_shell_commands[] = {
     {.name = "list",
      .param_name = "<page_number>",
      .nparams = 1,
-     .description = "Returns the specified page of the list of users registered on the server",
+     .description = "Returns the list of users of the specified page. Max 25",
      .on_success_message = "Users"},
     {.name = "hist",
      .param_name = "",
@@ -287,10 +287,8 @@ int main(const int argc, char** argv) {
 }
 
 void help() {
-    printf("|     NAME   |        SYNOPSIS     |                               "
-           "DESCRIPTION                                |\n");
-    printf("|------------+---------------------+--------------------------------"
-           "------------------------------------------|\n");
+    printf("|     NAME   |        SYNOPSIS     |                           DESCRIPTION                            |\n");
+    printf("|------------+---------------------+------------------------------------------------------------------|\n");
     for (int i = 0; i < CANT_COMMANDS; i++) {
         printf("| ");
         printf("%s", alpha_shell_commands[i].name);
@@ -302,7 +300,7 @@ void help() {
 
         printf(" | ");
         printf("%s", alpha_shell_commands[i].description);
-        print_white_spaces(strlen(alpha_shell_commands[i].description), 72);
+        print_white_spaces(strlen(alpha_shell_commands[i].description), 64);
         printf(" | \n");
     }
 }
