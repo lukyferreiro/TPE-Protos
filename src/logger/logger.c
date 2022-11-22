@@ -6,7 +6,19 @@
 #include <stdio.h>
 #include <time.h>
 
+#define MAX_DATE 21
+
+static char* get_date();
+
 LOG_LEVEL current_level = DEBUG;
+
+static char* get_date() {
+    char date[MAX_DATE];
+    time_t now = time(NULL);
+    struct tm* time_info = localtime(&now);
+    strftime(date, MAX_DATE, "%FT%TZ", time_info);
+    return date;
+}
 
 void setLogLevel(LOG_LEVEL newLevel) {
     if (newLevel >= DEBUG && newLevel <= FATAL)
@@ -34,7 +46,5 @@ void logger(LOG_LEVEL level, const char* fmt, ...) {
 }
 
 void sniffer_logger(char* username, char* password) {
-    time_t now = time(NULL);
-    struct tm* time_info = localtime(&now);
-    logger(INFO, "%s\t Sniffed credentials: %s:%s\n", time_info, username, password);
+    logger(INFO, "%s\t Sniffed credentials: %s:%s\n", get_date(), username, password);
 }
