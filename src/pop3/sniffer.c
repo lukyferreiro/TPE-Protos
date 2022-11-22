@@ -138,7 +138,7 @@ enum sniffer_state sniffer_parser_feed(sniffer_parser* p, const uint8_t b) {
             // Nada para hacer
             break;
         default:
-            logger(DEBUG, "Unknown state of sniffer parser");
+            logger(LOG_ERROR, "Unknown state of sniffer parser");
             abort();
             break;
     }

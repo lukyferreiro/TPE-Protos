@@ -13,6 +13,9 @@
 #include <sys/types.h>  // socket
 #include <unistd.h>
 
+//TODO comentar este define para que no aparezcan los logs de debug
+#define IS_DEBUG 1
+
 typedef enum { DEBUG = 0, INFO, LOG_ERROR, FATAL } LOG_LEVEL;
 
 extern LOG_LEVEL current_level;
@@ -24,6 +27,7 @@ extern LOG_LEVEL current_level;
 void setLogLevel(LOG_LEVEL newLevel);
 char* levelDescription(LOG_LEVEL level);
 void logger(LOG_LEVEL level, const char* fmt, ...);
+void log_debug(const char* fmt, ...);
 void sniffer_logger(char* username, char* password);
 
 // Debe ser una macro para poder obtener nombre y linea de archivo.

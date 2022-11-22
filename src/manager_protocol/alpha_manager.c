@@ -229,11 +229,8 @@ static void get_is_auth_handler(alpha_res* alpha_res, alpha_req alpha_req) {
 
 static void post_add_user_handler(alpha_res* alpha_res, alpha_req alpha_req) {
     char* username = alpha_req.data.string;
-    logger(DEBUG, "%s", username);
     char* password = strchr(username, USER_PASSWORD_DELIMETER);
     *password++ = 0;
-    logger(DEBUG, "%d", socks5_args.nusers);
-    logger(DEBUG, "%s:%s", username, password);
     if (socks5_args.nusers != MAX_USERS) {
         if (!valid_user_is_registered(username)) {
             logger(INFO, "User '%s' was added", username);

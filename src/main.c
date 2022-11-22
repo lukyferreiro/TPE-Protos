@@ -64,7 +64,7 @@ int main(const int argc, char** argv) {
     //---------------------------------------------------------------
     fd = create_socket(&socks5_args, ADDR_IPV4, false);
     if (fd < 0) {
-        logger(DEBUG, "Cannot create IPv4 passive socket of SOCKSv5");
+        logger(LOG_ERROR, "Cannot create IPv4 passive socket of SOCKSv5");
     } else if (selector_fd_set_nio(fd) == -1) {
         perror("selector_fd_set_nio");
         err_msg = "Error getting SOCKSv5 server IPv4 socket as non blocking";
@@ -75,7 +75,7 @@ int main(const int argc, char** argv) {
 
     fd = create_socket(&socks5_args, ADDR_IPV6, false);
     if (fd < 0) {
-        logger(DEBUG, "Cannot create IPv6 passive socket of SOCKSv5");
+        logger(LOG_ERROR, "Cannot create IPv6 passive socket of SOCKSv5");
     } else if (selector_fd_set_nio(fd) == -1) {
         perror("selector_fd_set_nio");
         err_msg = "Error getting SOCKSv5 server IPv6 socket as non blocking";
@@ -93,7 +93,7 @@ int main(const int argc, char** argv) {
     //---------------------------------------------------------------
     fd = create_socket(&socks5_args, ADDR_IPV4, true);
     if (fd < 0) {
-        logger(DEBUG, "Cannot create IPv4 passive socket for manager");
+        logger(LOG_ERROR, "Cannot create IPv4 passive socket for manager");
     } else if (selector_fd_set_nio(fd) == -1) {
         perror("selector_fd_set_nio");
         err_msg = "Error getting manager server IPv4 socket as non blocking";
@@ -104,7 +104,7 @@ int main(const int argc, char** argv) {
 
     fd = create_socket(&socks5_args, ADDR_IPV6, true);
     if (fd < 0) {
-        logger(DEBUG, "Cannot create IPv6 passive socket for manager");
+        logger(LOG_ERROR, "Cannot create IPv6 passive socket for manager");
     } else if (selector_fd_set_nio(fd) == -1) {
         perror("selector_fd_set_nio");
         err_msg = "Error getting manager IPv6 socket as non blocking";

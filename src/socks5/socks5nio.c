@@ -439,7 +439,7 @@ void socksv5_pool_destroy(void) {
     struct socks5 *next, *s;
     for (s = pool; s != NULL; s = next) {
         next = s->next;
-        logger(DEBUG, "Socks5 pool destroy");
+        log_debug("Socks5 pool destroy");
         if (s->origin_resolution != NULL) {
             free(s->origin_resolution);
         }
@@ -588,7 +588,7 @@ static unsigned hello_read(struct selector_key* key) {
     if (n > 0) {
         buffer_write_adv(d->rb, n);
         add_bytes_transferred(n);
-        logger(DEBUG, "[HELLO_READ] Transferred %d bytes", n);
+        log_debug("[HELLO_READ] Transferred %d bytes", (long)n);
         if (hello_parser_consume(d->rb, &d->parser, &error)) {
             if (selector_set_interest_key(key, OP_WRITE) == SELECTOR_SUCCESS) {
                 ret = hello_process(d);
@@ -596,7 +596,7 @@ static unsigned hello_read(struct selector_key* key) {
                 ret = ERROR;
             }
             if (error) {
-                logger(DEBUG, "%s", hello_parser_error(&d->parser));
+                log_debug("%s", hello_parser_error(&d->parser));
             }
         }
     } else {
@@ -637,7 +637,7 @@ static unsigned hello_write(struct selector_key* key) {
     } else {
         buffer_read_adv(d->wb, n);
         add_bytes_transferred(n);
-        logger(DEBUG, "[HELLO_WRITE] Transferred %d bytes", n);
+        log_debug("[HELLO_WRITE] Transferred %d bytes", (long)n);
         if (!buffer_can_read(d->wb)) {
             if (selector_set_interest_key(key, OP_READ) == SELECTOR_SUCCESS) {
                 if (d->method == METHOD_AUTHENTICATION) {
@@ -859,12 +859,12 @@ static unsigned request_read(struct selector_key* key) {
     if (n > 0) {
         buffer_write_adv(b, n);
         add_bytes_transferred(n);
-        logger(DEBUG, "[REQUEST_READ] Transferred %d bytes", n);
+        log_debug("[REQUEST_READ] Transferred %d bytes", (long)n);
         if (request_parser_consume(b, &d->parser, &error)) {
             ret = request_process(key, d);
         }
         if (error) {
-            logger(DEBUG, "%s", request_parser_error(&d->parser));
+            log_debug("%s", request_parser_error(&d->parser));
         }
     } else {
         ret = ERROR;
@@ -880,11 +880,12 @@ static unsigned request_resolv_done(struct selector_key* key) {
     struct addrinfo* aip;
 
     ailist = s->origin_resolution;
-    logger(DEBUG, "---------Resolv FQDN information---------");
+    logger(INFO, "Resolv FQDN information");
+    log_debug("---------Resolv FQDN information---------");
     for (aip = ailist; aip != NULL; aip = aip->ai_next) {
-        logger(DEBUG, "Type=%s, Protocol=%s, Address=%s ", printFamily(aip), printProtocol(aip), printAddressPort(aip, aip->ai_addr));
+        log_debug("Type=%s, Protocol=%s, Address=%s ", printFamily(aip), printProtocol(aip), printAddressPort(aip, aip->ai_addr));
     }
-    logger(DEBUG, "-----------------------------------------");
+    log_debug("-----------------------------------------");
 
     if (s->origin_resolution == NULL) {
         logger(LOG_ERROR, "[SOCKS5] Resolution of FQDN failed");
@@ -944,7 +945,7 @@ static unsigned request_connecting(struct selector_key* key) {
             if (s->origin_resolution_current != NULL) {
                 s->origin_resolution_current = s->origin_resolution_current->ai_next;
                 if (s->origin_resolution_current != NULL) {
-                    logger(DEBUG, "Retrying connection");
+                    logger(INFO, "Retrying connection");
                     s->origin_domain = s->origin_resolution_current->ai_family;
                     s->origin_addr_len = s->origin_resolution_current->ai_addrlen;
                     memcpy(&s->origin_addr, s->origin_resolution_current->ai_addr, s->origin_resolution_current->ai_addrlen);
@@ -994,7 +995,7 @@ static unsigned request_write(struct selector_key* key) {
     } else {
         buffer_read_adv(b, n);
         add_bytes_transferred(n);
-        logger(DEBUG, "[REQUEST_WRITE] Transferred %d bytes", n);
+        log_debug("[REQUEST_WRITE] Transferred %d bytes", (long)n);
         if (!buffer_can_read(b)) {
             ret = COPY;
             if (selector_set_interest_key(key, OP_READ) != SELECTOR_SUCCESS) {
@@ -1035,7 +1036,7 @@ static void sniff_credentials(struct selector_key* key, uint8_t* sniffer_ptr, ss
         sniffer_parser_consume(p, &error);
     }
     if (error) {
-        logger(DEBUG, "%s", sniffer_parser_error(p));
+        log_debug("%s", sniffer_parser_error(p));
     }
 }
 
@@ -1144,7 +1145,7 @@ static unsigned copy_write(struct selector_key* key) {
         }
     } else {
         add_bytes_transferred(n);
-        logger(DEBUG, "[COPY_WRITE] Transferred %d bytes", n);
+        log_debug("[COPY_WRITE] Transferred %d bytes", (int)n);
         if (socks5_args.sniffing) {
             sniff_credentials(key, ptr, n);
         }
@@ -1203,7 +1204,7 @@ static unsigned auth_read(struct selector_key* key) {
     if (n > 0) {
         buffer_write_adv(b, n);
         add_bytes_transferred(n);
-        logger(DEBUG, "[AUTH_READ] Transferred %d bytes", n);
+        log_debug("[AUTH_READ] Transferred %d bytes", (long)n);
         if (auth_parser_consume(b, &d->parser, &error)) {
             if (selector_set_interest_key(key, OP_WRITE) == SELECTOR_SUCCESS) {
                 ret = auth_process(d);
@@ -1212,7 +1213,7 @@ static unsigned auth_read(struct selector_key* key) {
                 ret = ERROR;
             }
             if (error) {
-                logger(DEBUG, "%s", auth_parser_error(&d->parser));
+                log_debug("%s", auth_parser_error(&d->parser));
             }
         }
     } else {
@@ -1237,7 +1238,7 @@ static unsigned auth_write(struct selector_key* key) {
     } else {
         buffer_read_adv(d->wb, n);
         add_bytes_transferred(n);
-        logger(DEBUG, "[AUTH_WRITE] Transferred %d bytes", n);
+        log_debug("[AUTH_WRITE] Transferred %d bytes", (long)n);
         if (!buffer_can_read(d->wb)) {
             if (selector_set_interest_key(key, OP_READ) == SELECTOR_SUCCESS) {
                 ret = REQUEST_READ;

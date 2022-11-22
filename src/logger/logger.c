@@ -16,7 +16,7 @@ static char* get_date() {
     char* date = (char*)malloc(MAX_DATE * sizeof(char));
     time_t now = time(NULL);
     struct tm* time_info = localtime(&now);
-    strftime(date, MAX_DATE, "%FT%TZ", time_info);
+    strftime(date, MAX_DATE, "%F-T%T", time_info);
     return date;
 }
 
@@ -43,6 +43,17 @@ void logger(LOG_LEVEL level, const char* fmt, ...) {
     }
     if (level == FATAL)
         exit(1);
+}
+
+void log_debug(const char* fmt, ...) {
+#ifdef IS_DEBUG
+    fprintf(stderr, "DEBUG: ");
+    va_list arg;
+    va_start(arg, fmt);
+    vfprintf(stderr, fmt, arg);
+    va_end(arg);
+    fprintf(stderr, "\n");
+#endif
 }
 
 void sniffer_logger(char* username, char* password) {

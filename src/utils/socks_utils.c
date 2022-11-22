@@ -50,7 +50,7 @@ int create_socket(struct socks5_args* args, addr_type addr_type, bool is_udp) {
         addr.sin_family = AF_INET;
         addr.sin_port = htons(port);
         if (inet_pton(AF_INET, address4, &addr.sin_addr.s_addr) <= 0) {
-            logger(DEBUG, "Cannot translate to IPv4 the address %s", address4);
+            logger(LOG_ERROR, "Cannot translate to IPv4 the address %s", address4);
             close(new_socket);
             return -1;
         }
@@ -64,7 +64,7 @@ int create_socket(struct socks5_args* args, addr_type addr_type, bool is_udp) {
         addr_6.sin6_family = AF_INET6;
         addr_6.sin6_port = htons(port);
         if (inet_pton(AF_INET6, address6, &addr_6.sin6_addr) <= 0) {
-            logger(DEBUG, "Cannot translate to IPv6 the address %s", address6);
+            logger(LOG_ERROR, "Cannot translate to IPv6 the address %s", address6);
             close(new_socket);
             return -1;
         }

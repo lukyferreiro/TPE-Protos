@@ -61,7 +61,7 @@ enum auth_state auth_parser_feed(struct auth_parser* p, const uint8_t b) {
             // Nada para hacer
             break;
         default:
-            logger(DEBUG, "Unknown state on auth parser");
+            logger(LOG_ERROR, "Unknown state on auth parser");
             abort();
             break;
     }
